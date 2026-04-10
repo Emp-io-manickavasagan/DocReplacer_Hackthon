@@ -2650,10 +2650,11 @@ export default function CoreAppFlow() {
   return (
     <div className="relative min-h-screen text-slate-900 font-sans overflow-hidden" style={{background:'#f0f4ff'}}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Outfit:wght@600;700&display=swap');
         body { font-family: 'DM Sans', sans-serif !important; }
         .db-serif { font-family: 'DM Serif Display', serif !important; }
         .db-mono { font-family: 'DM Mono', monospace !important; }
+        .brand-font { font-family: 'Outfit', sans-serif !important; font-weight: 700 !important; letter-spacing: -0.02em !important; }
       `}</style>
       {loadingPhase === "docx" && <LoadingOverlay phase="docx" />}
       
@@ -2672,7 +2673,7 @@ export default function CoreAppFlow() {
             <div className="w-8 h-8 rounded-xl shadow-[0_4px_12px_rgba(99,102,241,0.4)] flex items-center justify-center" style={{background:'#c7cbe8'}}>
               <img src="/Logo.ico" alt="DocReplacer Logo" className="w-6 h-6 object-contain" />
             </div>
-            <span className="font-bold text-[16px] tracking-tight text-slate-900">DocReplacer</span>
+            <span className="brand-font text-[18px] text-slate-900">DocReplacer</span>
           </div>
 
           <div className="hidden sm:flex justify-center items-center gap-2">

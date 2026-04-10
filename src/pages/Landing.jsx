@@ -14,10 +14,11 @@ export default function LandingPage() {
   return (
     <div className="relative min-h-screen bg-[#0a0a0f] text-white font-sans overflow-x-hidden">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Outfit:wght@600;700&display=swap');
         * { font-family: 'DM Sans', sans-serif; }
         h1, h2, .serif { font-family: 'DM Serif Display', serif; }
         .mono { font-family: 'DM Mono', monospace; }
+        .brand-font { font-family: 'Outfit', sans-serif !important; font-weight: 700 !important; letter-spacing: -0.02em !important; }
         @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
         @keyframes float { 0%,100% { transform:translateY(0px); } 50% { transform:translateY(-8px); } }
         .fade-up { animation: fadeUp 0.7s ease forwards; }
@@ -31,6 +32,13 @@ export default function LandingPage() {
         .card-hover:hover { border-color: rgba(99,102,241,0.3); transform: translateY(-2px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
         .floating { animation: float 4s ease-in-out infinite; }
         .grid-bg { background-image: linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px); background-size: 48px 48px; }
+
+        /* Custom Scrollbar scoped to landing page styles */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #0a0a0f; }
+        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 5px; border: 2px solid #0a0a0f; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.8); }
+        * { scrollbar-width: thin; scrollbar-color: rgba(99, 102, 241, 0.5) #0a0a0f; }
       `}</style>
 
       {/* Ambient blobs */}
@@ -47,7 +55,7 @@ export default function LandingPage() {
             <div className="w-8 h-8 rounded-xl shadow-lg flex items-center justify-center" style={{background:'#c7cbe8'}}>
               <img src="/Logo.ico" alt="DocReplacer Logo" className="w-6 h-6 object-contain" />
             </div>
-            <span className="font-bold text-[17px] tracking-tight text-white">DocReplacer</span>
+            <span className="brand-font text-[18px] text-white">DocReplacer</span>
           </div>
 
           <div className="hidden md:flex items-center gap-8">
@@ -158,7 +166,7 @@ export default function LandingPage() {
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{background:'#c7cbe8'}}>
                     <img src="/Logo.ico" alt="DocReplacer Logo" className="w-5 h-5 object-contain" />
                   </div>
-                  <span className="font-bold text-[13px] text-white">DocReplacer</span>
+                  <span className="brand-font text-[14px] text-white">DocReplacer</span>
                 </div>
                 <div className="space-y-1">
                   <div className="text-[10px] font-bold text-white/25 uppercase tracking-widest mb-3">Menu</div>
