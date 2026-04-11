@@ -1,10 +1,64 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { Sparkles, ArrowLeft, FileText, Zap, Lock, Layers, Code } from 'lucide-react';
 
 export default function DocsPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
+      
+      {/* --- SEO & META TAGS HEAD INJECTION --- */}
+      <Helmet>
+        <title>Documentation | DocReplacer Free AI Word Document Generator</title>
+        <meta name="description" content="Read the official documentation for DocReplacer. Learn how our client-side AI document builder generates private, fully formatted .docx files directly in your browser." />
+        <meta name="keywords" content="DocReplacer docs, AI document generator tutorial, how to generate docx with AI, client-side OpenXML builder, private AI word generator guide" />
+        <link rel="canonical" href="https://docreplacer.com/docs" />
+        <meta property="og:title" content="DocReplacer Documentation | Private AI .docx Generator" />
+        <meta property="og:description" content="Learn how DocReplacer instantly transforms prompts into fully formatted Word documents securely in your browser." />
+        <meta property="og:type" content="article" />
+      </Helmet>
+
+      {/* AEO: FAQPage Schema */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Is my data sent to a server for document creation?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No. DocReplacer is a fully client-side application. While text generation uses an AI endpoint, the construction and zipping of the .docx file happens locally on your device."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I change the formatting of the generated document?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. The Global Style Settings menu allows you to adjust font families, text sizes, alignments, line spacing, margins, and table aesthetics before downloading."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Will the .docx file work in standard word processors?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Absolutely. DocReplacer builds valid Open XML documents, ensuring 100% compatibility with Microsoft Word, Google Docs, and LibreOffice."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Do I need an account to use DocReplacer?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No. DocReplacer is built on a utility-first model. Just open the app, enter your prompt, and generate your file without any account needed."
+              }
+            }
+          ]
+        })}
+      </script>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
         * { font-family: 'DM Sans', sans-serif; }
@@ -18,7 +72,7 @@ export default function DocsPage() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 rounded-xl shadow-lg flex items-center justify-center" style={{background:'#c7cbe8'}}>
-              <img src="/Logo.ico" alt="DocReplacer Logo" className="w-6 h-6 object-contain" />
+              <img src="/Logo.ico" alt="DocReplacer AI Generator Logo" className="w-6 h-6 object-contain" />
             </div>
             <span className="font-bold text-[17px] tracking-tight text-white">DocReplacer</span>
           </Link>
@@ -38,7 +92,7 @@ export default function DocsPage() {
               ✦ Official Documentation
             </div>
             <h1 className="serif text-[48px] md:text-[56px] text-white leading-tight mb-4">DocReplacer Docs</h1>
-            <p className="text-white/50 text-lg leading-relaxed">The fastest, most secure way to generate professional <code>.docx</code> files from a single prompt.</p>
+            <p className="text-white/50 text-lg leading-relaxed">The fastest, most secure way to generate professional <code>.docx</code> files from a single prompt using client-side AI.</p>
           </div>
 
           <div className="space-y-14">
@@ -51,7 +105,7 @@ export default function DocsPage() {
                 DocReplacer is a utility-first web application designed to instantly transform simple text prompts into fully formatted, ready-to-download Microsoft Word (<code>.docx</code>) documents.
               </p>
               <p className="text-white/60 leading-relaxed mt-4">
-                Built with privacy and efficiency in mind, DocReplacer operates entirely on the client side. By converting AI-generated JSON payloads directly into valid XML structures and compressing them locally within your browser, it eliminates the need for backend servers. Your data remains completely private, and your inputs are never stored or used to train AI models.
+                Built with privacy and efficiency in mind, DocReplacer operates entirely on the frontend without relying on server-side databases. By converting AI-generated JSON payloads directly into valid XML structures and compressing them locally within your browser, your data remains completely private, and your inputs are never stored.
               </p>
             </section>
 
@@ -59,7 +113,7 @@ export default function DocsPage() {
             <section>
               <h2 className="serif text-[28px] text-white mb-3">How DocReplacer Works</h2>
               <div className="w-10 h-px bg-indigo-500/40 mb-5" />
-              <p className="text-white/60 mb-8">DocReplacer simplifies document creation into a seamless three-step workflow:</p>
+              <p className="text-white/60 mb-8">DocReplacer simplifies AI document creation into a seamless three-step workflow:</p>
 
               <div className="space-y-5">
                 {/* Step 1 */}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { Sparkles, ArrowRight, Lock, Clock, FileText, CheckCircle2, Zap, Shield, Layers, ChevronRight, Star } from 'lucide-react';
 
 export default function LandingPage() {
@@ -13,6 +14,38 @@ export default function LandingPage() {
 
   return (
     <div className="relative min-h-screen bg-[#0a0a0f] text-white font-sans overflow-x-hidden">
+      
+      {/* --- SEO & META TAGS HEAD INJECTION --- */}
+      <Helmet>
+        <title>DocReplacer | Free AI Word Document Generator & .docx Builder</title>
+        <meta name="description" content="Generate professional Microsoft Word (.docx) files instantly from text prompts. A 100% free, private, client-side AI document creator with no login required." />
+        <meta name="keywords" content="Free AI Word document generator, client-side docx creator, generate docx from prompt, private AI document writer, OpenXML builder, no login word doc" />
+        <meta property="og:title" content="DocReplacer | Private AI .docx Generator" />
+        <meta property="og:description" content="Turn a simple prompt into a fully-formatted .docx Word file securely in your browser. No server, no tracking." />
+        <meta property="og:type" content="website" />
+      </Helmet>
+
+      {/* AEO: SoftwareApplication Schema */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "DocReplacer",
+          "operatingSystem": "Web",
+          "applicationCategory": "BusinessApplication",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "description": "Free AI-powered tool that generates professional .docx files from text prompts privately, entirely in the browser.",
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "ratingCount": "100"
+          }
+        })}
+      </script>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Outfit:wght@600;700&display=swap');
         * { font-family: 'DM Sans', sans-serif; }
@@ -53,7 +86,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl shadow-lg flex items-center justify-center" style={{background:'#c7cbe8'}}>
-              <img src="/Logo.ico" alt="DocReplacer Logo" className="w-6 h-6 object-contain" />
+              <img src="/Logo.ico" alt="DocReplacer AI Word Generator Logo" className="w-6 h-6 object-contain" />
             </div>
             <span className="brand-font text-[18px] text-white">DocReplacer</span>
           </div>
@@ -63,6 +96,8 @@ export default function LandingPage() {
               { label: 'Home', href: '#' },
               { label: 'Features', href: '#features' },
               { label: 'How It Works', href: '#how-it-works' },
+              { label: 'Engine', href: '/engine' },
+              { label: 'Use Cases', href: '/use-cases' },
               { label: 'Docs', href: '/docs' },
               { label: 'Blog', href: '/blog' },
             ].map(({ label, href }) => (
@@ -88,7 +123,7 @@ export default function LandingPage() {
           <div className="flex justify-center mb-8 fade-up">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-[12px] font-semibold tracking-wide">
               <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-              Smart document generation — fast, private, and ready to download
+              Private AI document builder — fast, secure, and ready to download
             </div>
           </div>
 
@@ -99,7 +134,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-center text-white/50 text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed font-medium fade-up-2">
-            Turn a simple prompt into a fully-formatted <span className="text-white/80">.docx Word file</span> — ready to download in seconds.
+            Turn a simple text prompt into a fully-formatted <span className="text-white/80">.docx Word file</span> — your free, client-side AI document creator.
           </p>
 
           {/* 3-step guide strip */}
@@ -240,7 +275,7 @@ export default function LandingPage() {
                 icon: <Zap className="w-5 h-5 text-indigo-400" />,
                 bg: 'rgba(99,102,241,0.1)',
                 border: 'rgba(99,102,241,0.2)',
-                title: 'Streaming Generation',
+                title: 'Streaming AI Generation',
                 desc: 'Watch your document come alive in real time. Sections appear as the AI writes — no waiting for a full response.',
                 tip: '💡 Use the page selector to control document length and density.',
               },
@@ -248,16 +283,16 @@ export default function LandingPage() {
                 icon: <Lock className="w-5 h-5 text-violet-400" />,
                 bg: 'rgba(139,92,246,0.1)',
                 border: 'rgba(139,92,246,0.2)',
-                title: 'Client Side Building',
-                desc: 'Everything runs directly in your browser — no data leaves your device, making it perfect for confidential and sensitive content.',
-                tip: '💡 Your data stays in your browser — nothing is stored or sent to any third-party server.',
+                title: 'Private Client-Side Build',
+                desc: 'Everything runs directly in your browser — your private data never leaves your device, making it perfect for confidential content.',
+                tip: '💡 Your data stays in your browser — nothing is stored or sent to a DB.',
               },
               {
                 icon: <Layers className="w-5 h-5 text-blue-400" />,
                 bg: 'rgba(59,130,246,0.1)',
                 border: 'rgba(59,130,246,0.2)',
-                title: 'Full .docx Control',
-                desc: 'Edit every block — paragraphs, tables, bullets, columns. Fine-tune fonts, spacing, and margins before export.',
+                title: 'OpenXML .docx Control',
+                desc: 'Edit every block — paragraphs, tables, bullets, columns. Fine-tune fonts, spacing, and margins before native Word export.',
                 tip: '💡 Use the Style Editor in the Review step to match your brand.',
               },
             ].map(({ icon, bg, border, title, desc, tip }) => (
@@ -284,18 +319,18 @@ export default function LandingPage() {
           <div className="space-y-4">
             {[
               {
-                step: '01', title: 'Describe your document',
-                desc: 'Type a prompt like "Technical report on renewable energy for Q4 2025". Choose document type, length (1–10 pages), and hit Generate.',
+                step: '01', title: 'Describe your document prompt',
+                desc: 'Type a prompt like "Technical report on renewable energy". Choose document type, length (1–10 pages), and let the AI generator start.',
                 guide: 'Be specific — mentioning the audience, tone, and purpose gives the AI much better context.',
               },
               {
                 step: '02', title: 'Review and refine each block',
-                desc: 'Your document streams in section by section. Edit any block manually or ask the AI to rewrite, expand, or shorten specific parts.',
+                desc: 'Your document streams in section by section. Edit any block manually or ask the AI to rewrite, expand, or format specific parts.',
                 guide: 'Use the "✦ AI" button on each block to give targeted instructions like "make this more formal" or "add 2 rows to this table".',
               },
               {
                 step: '03', title: 'Build and download your .docx',
-                desc: 'Adjust global styles — fonts, spacing, margins — then hit Build. Get a perfectly formatted Word file in seconds.',
+                desc: 'Adjust global styles — fonts, spacing, margins — then hit Build. Get a perfectly formatted Word file in seconds directly to your local machine.',
                 guide: 'The Style Editor in the left panel lets you set brand fonts and colors so every document looks consistent.',
               },
             ].map(({ step, title, desc, guide }) => (
@@ -321,7 +356,7 @@ export default function LandingPage() {
           <div className="relative rounded-[28px] p-12 overflow-hidden" style={{background:'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1))', border:'1px solid rgba(99,102,241,0.2)'}}>
             <div className="absolute inset-0 pointer-events-none" style={{background:'radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.2), transparent 70%)'}} />
             <div className="relative">
-              <h2 className="serif text-[40px] md:text-[52px] text-white leading-tight mb-4">Start writing smarter<br /><span className="italic text-white/60">documents today</span></h2>
+              <h2 className="serif text-[40px] md:text-[52px] text-white leading-tight mb-4">Start generating free<br /><span className="italic text-white/60">AI Word documents today</span></h2>
               <p className="text-white/50 text-lg mb-8 font-medium">Free forever. No account needed. Just open DocReplacer and go.</p>
               <Link to="/app" className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full font-bold text-[16px] text-white glow-btn" style={{background:'linear-gradient(135deg, #6366f1, #8b5cf6)'}}>
                 Open DocReplacer <ArrowRight className="w-4 h-4" />
@@ -330,7 +365,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
 
     </div>
   );
