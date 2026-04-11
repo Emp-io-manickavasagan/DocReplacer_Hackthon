@@ -13,9 +13,19 @@ export default function DocsPage() {
         <meta name="description" content="Read the official documentation for DocReplacer. Learn how our client-side AI document builder generates private, fully formatted .docx files directly in your browser." />
         <meta name="keywords" content="DocReplacer docs, AI document generator tutorial, how to generate docx with AI, client-side OpenXML builder, private AI word generator guide" />
         <link rel="canonical" href="https://docreplacer.com/docs" />
-        <meta property="og:title" content="DocReplacer Documentation | Private AI .docx Generator" />
-        <meta property="og:description" content="Learn how DocReplacer instantly transforms prompts into fully formatted Word documents securely in your browser." />
+        
+        {/* Open Graph / Facebook */}
         <meta property="og:type" content="article" />
+        <meta property="og:url" content="https://docreplacer.com/docs" />
+        <meta property="og:title" content="DocReplacer Documentation | Private AI .docx Generator" />
+        <meta property="og:description" content="Official guide to generating private Word documents with DocReplacer AI." />
+        <meta property="og:image" content="https://docreplacer.com/Logo.ico" />
+
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://docreplacer.com/docs" />
+        <meta property="twitter:title" content="DocReplacer Documentation | Private AI .docx Generator" />
+        <meta property="twitter:description" content="Official guide to generating private Word documents with DocReplacer AI." />
       </Helmet>
 
       {/* AEO: FAQPage Schema */}

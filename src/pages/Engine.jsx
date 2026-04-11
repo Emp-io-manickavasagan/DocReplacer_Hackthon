@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Code, Cpu, Database, FileCog, ArrowRight, Terminal } from 'lucide-react';
+import { Code, Cpu, Database, FileCog, ArrowRight, Terminal, Menu, X } from 'lucide-react';
 
 export default function EnginePage() {
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -19,6 +20,19 @@ export default function EnginePage() {
         <meta name="description" content="Discover how DocReplacer builds complex .docx files entirely in the browser using a frontend-only architecture and zero-retention AI endpoints." />
         <meta name="keywords" content="frontend architecture, client side docx generation, zero retention AI, browser OpenXML assembly" />
         <link rel="canonical" href="https://docreplacer.com/engine" />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://docreplacer.com/engine" />
+        <meta property="og:title" content="Under the Hood | DocReplacer Architecture" />
+        <meta property="og:description" content="Browser-based .docx assembly with zero data retention. Technical deep dive." />
+        <meta property="og:image" content="https://docreplacer.com/Logo.ico" />
+
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://docreplacer.com/engine" />
+        <meta property="twitter:title" content="Under the Hood | DocReplacer Architecture" />
+        <meta property="twitter:description" content="Browser-based .docx assembly with zero data retention. Technical deep dive." />
       </Helmet>
 
       <style>{`
@@ -39,12 +53,53 @@ export default function EnginePage() {
             </div>
             <span className="brand-font text-[18px] text-white">DocReplacer</span>
           </Link>
-          <div className="flex items-center gap-6">
-            <Link to="/" className="text-[13px] font-semibold text-white/50 hover:text-white transition-colors">
-              Home
-            </Link>
-            <Link to="/app" className="text-[13px] font-semibold text-white/50 hover:text-white transition-colors">
-              Open App
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-6">
+              <Link to="/" className="text-[13px] font-semibold text-white/50 hover:text-white transition-colors">
+                Home
+              </Link>
+              <Link to="/app" className="text-[13px] font-semibold text-white/50 hover:text-white transition-colors">
+                Open App
+              </Link>
+            </div>
+            <button 
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="md:hidden p-2 text-white/70 hover:text-white transition-colors z-[60]"
+              aria-label="Toggle Menu"
+            >
+              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu Overlay */}
+        <div className={`fixed inset-0 z-[55] bg-[#0a0a0f]/95 backdrop-blur-2xl transition-all duration-500 md:hidden ${menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+          <div className="flex flex-col items-center justify-center min-h-screen gap-8 p-6">
+            {[
+              { label: 'Home', href: '/' },
+              { label: 'Application', href: '/app' },
+              { label: 'Engine', href: '/engine' },
+              { label: 'Documentation', href: '/docs' },
+            ].map(({ label, href }, i) => (
+              <div 
+                key={label} 
+                className={`transition-all duration-500 delay-[${i * 50}ms] ${menuOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
+              >
+                <Link 
+                  to={href} 
+                  onClick={() => setMenuOpen(false)}
+                  className="text-[24px] font-bold text-white/70 hover:text-white transition-colors"
+                >
+                  {label}
+                </Link>
+              </div>
+            ))}
+            <Link 
+              to="/app" 
+              onClick={() => setMenuOpen(false)}
+              className="mt-4 inline-flex items-center gap-2 px-8 py-4 bg-white text-black rounded-full font-bold text-[16px] transition-all"
+            >
+              Launch App <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -57,7 +112,7 @@ export default function EnginePage() {
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-[12px] font-semibold tracking-wide mb-6">
               <Terminal className="w-3.5 h-3.5" /> Architecture Overview
             </div>
-            <h1 className="serif text-[48px] md:text-[56px] text-white leading-tight mb-4">Under the Hood</h1>
+            <h1 className="serif text-[36px] sm:text-[48px] md:text-[56px] text-white leading-tight mb-4">Under the Hood</h1>
             <p className="text-white/50 text-lg leading-relaxed">How we engineered a highly capable document generator without relying on server-side data storage.</p>
           </div>
 

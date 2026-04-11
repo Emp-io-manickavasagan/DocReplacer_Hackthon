@@ -5,6 +5,7 @@ import CoreAppFlow from './pages/CoreAppFlow'
 import DocsPage from './pages/Docs'
 import EnginePage from './pages/Engine'
 import UseCasePage from './pages/UseCase'
+import HowItWorksPage from './pages/HowItWorks'
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="/docs" element={<DocsPage />} />
         <Route path="/engine" element={<EnginePage />} />
         <Route path="/use-cases" element={<UseCasePage />} />
+        <Route path="/how-it-works" element={<HowItWorksPage />} />
       </Routes>
     </Router>
   )

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { FileText, ArrowRight, CheckCircle2, Briefcase, Zap, Lock, ChevronRight } from 'lucide-react';
+import { FileText, ArrowRight, CheckCircle2, Briefcase, Zap, Lock, ChevronRight, Menu, X } from 'lucide-react';
 
 export default function UseCasePage() {
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -18,7 +19,20 @@ export default function UseCasePage() {
         <title>AI Business Proposal Generator | Free .docx Builder | DocReplacer</title>
         <meta name="description" content="Instantly generate professional, formatted business proposals in .docx format. 100% free, private, and runs entirely in your browser." />
         <meta name="keywords" content="AI business proposal generator, write business proposal AI, free docx proposal template, client-side document builder" />
-        <link rel="canonical" href="https://docreplacer.com/generate/business-proposal" />
+        <link rel="canonical" href="https://docreplacer.com/use-cases" />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://docreplacer.com/use-cases" />
+        <meta property="og:title" content="AI Business Proposal Generator | DocReplacer" />
+        <meta property="og:description" content="Professional .docx business proposals generated in-browser with AI. Private and free." />
+        <meta property="og:image" content="https://docreplacer.com/Logo.ico" />
+
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://docreplacer.com/use-cases" />
+        <meta property="twitter:title" content="AI Business Proposal Generator | DocReplacer" />
+        <meta property="twitter:description" content="Professional .docx business proposals generated in-browser with AI. Private and free." />
       </Helmet>
 
       <style>{`
@@ -45,13 +59,54 @@ export default function UseCasePage() {
             </div>
             <span className="brand-font text-[18px] text-white">DocReplacer</span>
           </Link>
-          <div className="flex items-center gap-6">
-            <Link to="/" className="text-[13px] font-semibold text-white/50 hover:text-white transition-colors">
-              Home
-            </Link>
-            <Link to="/app" className="inline-flex items-center gap-1.5 px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-semibold text-[13px] transition-all glow-btn">
-              Build Proposal Now
-              <ArrowRight className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-6">
+              <Link to="/" className="text-[13px] font-semibold text-white/50 hover:text-white transition-colors">
+                Home
+              </Link>
+              <Link to="/app" className="inline-flex items-center gap-1.5 px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-semibold text-[13px] transition-all glow-btn">
+                Build Proposal Now
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <button 
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="md:hidden p-2 text-white/70 hover:text-white transition-colors z-[60]"
+              aria-label="Toggle Menu"
+            >
+              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu Overlay */}
+        <div className={`fixed inset-0 z-[55] bg-[#0a0a0f]/95 backdrop-blur-2xl transition-all duration-500 md:hidden ${menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+          <div className="flex flex-col items-center justify-center min-h-screen gap-8 p-6">
+            {[
+              { label: 'Home', href: '/' },
+              { label: 'Application', href: '/app' },
+              { label: 'Engine', href: '/engine' },
+              { label: 'Documentation', href: '/docs' },
+            ].map(({ label, href }, i) => (
+              <div 
+                key={label} 
+                className={`transition-all duration-500 delay-[${i * 50}ms] ${menuOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
+              >
+                <Link 
+                  to={href} 
+                  onClick={() => setMenuOpen(false)}
+                  className="text-[24px] font-bold text-white/70 hover:text-white transition-colors"
+                >
+                  {label}
+                </Link>
+              </div>
+            ))}
+            <Link 
+              to="/app" 
+              onClick={() => setMenuOpen(false)}
+              className="mt-4 inline-flex items-center gap-2 px-8 py-4 bg-indigo-600 text-white rounded-full font-bold text-[16px] transition-all glow-btn"
+            >
+              Build Proposal Now <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -63,8 +118,8 @@ export default function UseCasePage() {
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-[12px] font-semibold tracking-wide mb-8">
             <Briefcase className="w-3.5 h-3.5" /> Specific Use Case
           </div>
-          <h1 className="serif text-[48px] md:text-[64px] text-white leading-[1.05] tracking-tight mb-6">
-            Write Winning <span className="italic text-transparent bg-clip-text" style={{backgroundImage:'linear-gradient(135deg, #818cf8, #a78bfa)'}}>Business Proposals</span> in Minutes.
+          <h1 className="serif text-[28px] sm:text-[42px] md:text-[64px] text-white leading-[1.2] md:leading-[1.05] tracking-tight mb-6 px-4">
+            Write Winning <span className="italic text-transparent bg-clip-text pr-2 md:pr-4" style={{backgroundImage:'linear-gradient(135deg, #818cf8, #a78bfa)'}}>Business Proposals</span> in Minutes.
           </h1>
           <p className="text-white/50 text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed font-medium">
             Stop staring at a blank Word document. Enter your client's needs, and let our AI generate a fully-formatted, ready-to-download proposal instantly.
