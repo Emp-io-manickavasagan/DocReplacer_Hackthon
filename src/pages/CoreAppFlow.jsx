@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
+import {
+  recordSessionVisit,
+  trackPromptSubmitted,
+  trackBuildDocx,
+  trackDownloadWithFeedback,
+} from "../tracking.js";
 
 /* ════════════════════════════════════════════════
    COLORS
@@ -57,9 +63,19 @@ const hexCol = c => (c || "#000000").replace("#", "").toUpperCase();
 const wAlign = a => a === "justify" ? "both" : a === "right" ? "end" : a === "center" ? "center" : "start";
 
 /* ════════════════════════════════════════════════
+   URL VALIDATOR — blocks unsafe schemes
+════════════════════════════════════════════════ */
+const SAFE_URL_SCHEMES = /^https?:\/\//i;
+const sanitizeUrl = (url) => {
+  if (!url || typeof url !== "string") return "";
+  const trimmed = url.trim();
+  return SAFE_URL_SCHEMES.test(trimmed) ? trimmed : "";
+};
+
+/* ════════════════════════════════════════════════
    OPENAI
 ════════════════════════════════════════════════ */
-async function callOpenAI(apiKey, model, prompt, opts = {}) {
+async function callOpenAI(apiKey, prompt, opts = {}) {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -67,15 +83,21 @@ async function callOpenAI(apiKey, model, prompt, opts = {}) {
       "Authorization": `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: model || "gpt-4o-mini",
+      model: import.meta.env.VITE_OPENAI_MODEL || "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
       temperature: opts.temperature ?? 0.7,
-      max_tokens: opts.num_predict || 4096,
+      max_tokens: opts.max_tokens || 4096,
     }),
   });
   if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    throw new Error(`OpenAI ${res.status} — ${t.slice(0, 200)}`);
+    const statusMessages = {
+      401: "Authentication failed. Please check your API key.",
+      403: "Access denied. Your API key may lack permission.",
+      429: "Rate limit reached. Please wait a moment and try again.",
+      500: "The AI service encountered an error. Please try again.",
+      503: "The AI service is temporarily unavailable. Please try again.",
+    };
+    throw new Error(statusMessages[res.status] || `Request failed (${res.status}). Please try again.`);
   }
   const d = await res.json();
   return d.choices?.[0]?.message?.content || "";
@@ -608,6 +630,8 @@ function makeHyperlinkXml(text, url, rId, bold, italic, docStyles) {
   const rPr = `<w:rPr><w:rFonts w:ascii="${font}" w:hAnsi="${font}" w:cs="${font}"/>${b}${i}<w:sz w:val="${szHp}"/><w:szCs w:val="${szHp}"/><w:color w:val="1155CC"/><w:u w:val="single"/></w:rPr>`;
   const displayText = xmlEsc(text || url || "Link");
   if (!rId) return `<w:p>${pPr}<w:r>${rPr}<w:t xml:space="preserve">${displayText}</w:t></w:r></w:p>`;
+  const safeUrl = sanitizeUrl(url);
+  if (!safeUrl) return `<w:p>${pPr}<w:r>${rPr}<w:t xml:space="preserve">${displayText}</w:t></w:r></w:p>`;
   return `<w:p>${pPr}<w:hyperlink r:id="${rId}" w:history="1"><w:r>${rPr}<w:t xml:space="preserve">${displayText}</w:t></w:r></w:hyperlink></w:p>`;
 }
 
@@ -694,6 +718,11 @@ async function buildDocx(elements, docStyles) {
   const styles = docStyles || DEFAULT_DOC_STYLES;
 
   // Collect media elements for relationship building
+  const SAFE_IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "gif", "webp"]);
+  const getSafeExt = (el) => {
+    const raw = (el.imageType || "png").toLowerCase().replace(/[^a-z]/g, "");
+    return SAFE_IMAGE_EXTS.has(raw) ? raw : "png";
+  };
   const imageEls = elements.filter(el => el.type === "image" && el.imageData);
   const hyperlinkEls = elements.filter(el => el.type === "hyperlink" && el.url);
 
@@ -916,14 +945,16 @@ ${paras.join("\n")}
   // Build dynamic relationships
   const imgRels = imageEls.map(el => {
     const rId = imgRIdMap.get(el.id);
-    const ext = el.imageType || "png";
+    const ext = getSafeExt(el);
     return `<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${el.id}.${ext}"/>`;
   }).join("\n  ");
 
   const hlRels = hyperlinkEls.map(el => {
     const rId = hlRIdMap.get(el.id);
-    return `<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${attrEsc(el.url)}" TargetMode="External"/>`;
-  }).join("\n  ");
+    const safeUrl = sanitizeUrl(el.url);
+    if (!safeUrl) return "";
+    return `<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${attrEsc(safeUrl)}" TargetMode="External"/>`;
+  }).filter(Boolean).join("\n  ");
 
   const docRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -953,7 +984,7 @@ ${paras.join("\n")}
 
   // Embed image files as base64
   for (const el of imageEls) {
-    const ext = el.imageType || "png";
+    const ext = getSafeExt(el);
     const b64 = el.imageData.includes(",") ? el.imageData.split(",")[1] : el.imageData;
     zip.file(`word/media/${el.id}.${ext}`, b64, { base64: true });
   }
@@ -964,7 +995,7 @@ ${paras.join("\n")}
 /* ════════════════════════════════════════════════
    OPENAI — STREAMING
 ════════════════════════════════════════════════ */
-async function* streamOpenAI(apiKey, model, prompt, opts = {}) {
+async function* streamOpenAI(apiKey, prompt, opts = {}) {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -972,16 +1003,22 @@ async function* streamOpenAI(apiKey, model, prompt, opts = {}) {
       "Authorization": `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: model || "gpt-4o-mini",
+      model: import.meta.env.VITE_OPENAI_MODEL || "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
       stream: true,
       temperature: opts.temperature ?? 0.6,
-      max_tokens: opts.num_predict || 6000,
+      max_tokens: opts.max_tokens || 6000,
     }),
   });
   if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    throw new Error(`OpenAI ${res.status} — ${t.slice(0, 200)}`);
+    const statusMessages = {
+      401: "Authentication failed. Please check your API key.",
+      403: "Access denied. Your API key may lack permission.",
+      429: "Rate limit reached. Please wait a moment and try again.",
+      500: "The AI service encountered an error. Please try again.",
+      503: "The AI service is temporarily unavailable. Please try again.",
+    };
+    throw new Error(statusMessages[res.status] || `Request failed (${res.status}). Please try again.`);
   }
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -1032,6 +1069,9 @@ function DocPreviewModal({ uint8, title, onClose }) {
         await new Promise((res, rej) => {
           const s = document.createElement("script");
           s.src = "https://unpkg.com/docx-preview@0.3.6/dist/docx-preview.min.js";
+          // NOTE: unpkg does not provide SRI hashes. To harden this further, self-host
+          // docx-preview and add a proper integrity hash.
+          s.crossOrigin = "anonymous";
           s.onload = res;
           s.onerror = () => rej(new Error("Failed to load docx-preview"));
           document.head.appendChild(s);
@@ -1161,6 +1201,105 @@ function DocPreviewModal({ uint8, title, onClose }) {
               cursor: "pointer",
             }}
           >Close ×</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return ReactDOM.createPortal(modal, document.body);
+}
+
+/* ════════════════════════════════════════════════
+   DOWNLOAD — REVIEW & FEEDBACK MODAL
+════════════════════════════════════════════════ */
+function DownloadFeedbackModal({ docTitle, onClose, onConfirm }) {
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const modal = (
+    <div
+      className="dr-modal-wrap fixed inset-0 z-[99998] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-[0_24px_64px_rgba(0,0,0,0.25)] overflow-hidden text-left"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-6 pt-6 pb-4 border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-violet-50">
+          <div className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1">Before you download</div>
+          <h3 className="db-serif text-xl text-slate-900 font-bold tracking-tight">Quick review</h3>
+          <p className="text-[13px] text-slate-600 mt-2 font-medium leading-relaxed">
+            Optional: rate your experience and leave a short note. We log this with your download to improve DocReplacer.
+          </p>
+          {docTitle ? (
+            <p className="text-[12px] text-slate-500 mt-2 font-medium truncate" title={docTitle}>
+              <span className="text-slate-400">Document:</span> {docTitle}
+            </p>
+          ) : null}
+        </div>
+        <div className="px-6 py-5 space-y-5">
+          <div>
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Rating</div>
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  aria-label={`${n} star${n > 1 ? "s" : ""}`}
+                  onClick={() => setRating(n)}
+                  className={`text-3xl leading-none px-1 py-0.5 rounded-lg transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-indigo-300 ${n <= rating ? "text-amber-400" : "text-slate-200 hover:text-slate-300"}`}
+                >
+                  ★
+                </button>
+              ))}
+              {rating > 0 && (
+                <button type="button" onClick={() => setRating(0)} className="ml-2 text-[12px] font-semibold text-slate-400 hover:text-slate-600">
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+          <div>
+            <label htmlFor="dr-download-feedback" className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Feedback</label>
+            <textarea
+              id="dr-download-feedback"
+              rows={3}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="What worked well or what could be better?"
+              className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 bg-slate-50/80 text-slate-800 text-[14px] placeholder:text-slate-400 focus:outline-none focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100/50 resize-y font-medium"
+              maxLength={2000}
+            />
+            <p className="text-[11px] text-slate-400 mt-1 font-medium">{comment.length} / 2000</p>
+          </div>
+        </div>
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-[14px] font-bold hover:bg-slate-100 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => onConfirm({ rating: rating || null, comment })}
+            className="w-full sm:w-auto px-6 py-3 rounded-xl text-white text-[14px] font-bold shadow-[0_8px_20px_rgba(99,102,241,0.35)] hover:shadow-[0_8px_28px_rgba(99,102,241,0.45)] transition-all"
+            style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
+          >
+            ⬇ Download .docx
+          </button>
         </div>
       </div>
     </div>
@@ -1591,7 +1730,7 @@ const TYPE_LABEL = { title: "Title", h1: "H1", h2: "H2", paragraph: "Paragraph",
 const TYPE_BADGE = { title: { bg: C.blue900, text: C.white }, h1: { bg: C.blue700, text: C.white }, h2: { bg: C.blue100, text: C.blue800 }, paragraph: { bg: C.gray200, text: C.gray700 }, body: { bg: C.gray200, text: C.gray700 }, bullets: { bg: C.gray700, text: C.white }, hr: { bg: C.gray300, text: C.gray700 }, table: { bg: C.blue800, text: C.white }, columns: { bg: C.blue600, text: C.white } };
 const TYPE_BG = { title: C.blue900, h1: C.blue50, h2: C.bgMuted, paragraph: C.gray100, body: C.gray100, bullets: C.gray100, hr: C.gray100, table: C.blue50, columns: C.blue50 };
 
-function TemplateBlock({ el, idx, total, onUpdate, onUpdateBatch, onRemove, onMoveUp, onMoveDown, apiKey, model }) {
+function TemplateBlock({ el, idx, total, onUpdate, onUpdateBatch, onRemove, onMoveUp, onMoveDown }) {
   const badge = TYPE_BADGE[el.type] || TYPE_BADGE.paragraph;
   const bgColor = TYPE_BG[el.type] || C.gray100;
   const isTitle = el.type === "title", isHeading = el.type === "h1" || el.type === "h2";
@@ -1750,7 +1889,7 @@ Return ONLY a valid JSON array with exactly ${el.cols || 2} strings (no markdown
 JSON:`;
       }
 
-      const raw = await callOpenAI(apiKey, model, prompt, { num_predict: 2000, temperature: 0.65 });
+      const raw = await callOpenAI(import.meta.env.VITE_OPENAI_API_KEY || "", prompt, { max_tokens: 2000, temperature: 0.65 });
 
       /* parse & apply */
       if (isTitle || isHeading) {
@@ -1927,7 +2066,7 @@ const DOC_TYPES = [
   { value: "report", label: "Report", icon: "◎" },
 ];
 
-function Step1Prompt({ apiKey, model, onDone, setLoadingPhase }) {
+function Step1Prompt({ onDone, setLoadingPhase }) {
   const [prompt, setPrompt] = useState("");
   const [docType, setDocType] = useState("professional");
   const [pages, setPages] = useState(3);
@@ -2006,7 +2145,7 @@ Quality requirements:
 
 JSON:`;
     let raw = "";
-    const gen = streamOpenAI(apiKey, model, p, { num_predict: 600, temperature: 0.2 });
+    const gen = streamOpenAI(import.meta.env.VITE_OPENAI_API_KEY || "", p, { max_tokens: 600, temperature: 0.2 });
     for await (const chunk of gen) {
       if (abortRef.current) return null;
       raw += chunk;
@@ -2050,8 +2189,8 @@ STRICT PROHIBITIONS — violating any of these rules is an error:
 
 Paragraphs:`;
     let raw = "";
-    const gen = streamOpenAI(apiKey, model, p, {
-      num_predict: numParas * (wordsPerPara + 60) * 2,
+    const gen = streamOpenAI(import.meta.env.VITE_OPENAI_API_KEY || "", p, {
+      max_tokens: numParas * (wordsPerPara + 60) * 2,
       temperature: 0.35,
     });
     for await (const chunk of gen) {
@@ -2085,7 +2224,7 @@ Return ONLY a valid JSON array of 5 strings. No markdown fences, no extra text:
 ["**Term One**: clear explanation of this point in 15 to 25 words","**Term Two**: explanation here",...]
 JSON:`;
     let raw = "";
-    const gen = streamOpenAI(apiKey, model, p, { num_predict: 400, temperature: 0.6 });
+    const gen = streamOpenAI(import.meta.env.VITE_OPENAI_API_KEY || "", p, { max_tokens: 400, temperature: 0.6 });
     for await (const chunk of gen) { if (abortRef.current) return null; raw += chunk; }
     try {
       const arr = parseJsonRobust(raw);
@@ -2114,7 +2253,7 @@ IMPORTANT: Return ONLY the raw JSON object — absolutely nothing else before or
 {"headers":["Header1","Header2","Header3"],"rows":[["val","val","val"],["val","val","val"],["val","val","val"],["val","val","val"]]}
 JSON:`;
     let raw = "";
-    const gen = streamOpenAI(apiKey, model, p, { num_predict: 700, temperature: 0.25 });
+    const gen = streamOpenAI(import.meta.env.VITE_OPENAI_API_KEY || "", p, { max_tokens: 700, temperature: 0.25 });
     for await (const chunk of gen) { if (abortRef.current) return null; raw += chunk; }
 
     // Multi-attempt extraction
@@ -2169,6 +2308,8 @@ JSON:`;
   /* ── MAIN go() ── */
   const go = async () => {
     if (!prompt.trim()) { setError("Please describe your document."); return; }
+    if (prompt.trim().length < 10) { setError("Please provide a more descriptive prompt (at least 10 characters)."); return; }
+    if (prompt.length > 2000) { setError("Prompt is too long. Please keep it under 2000 characters."); return; }
     setError(""); setLoading(true); setTokens(0); setPhase("structure");
     setStreamLog("Connecting to AI…");
     setLoadingPhase("template");
@@ -2192,8 +2333,7 @@ JSON:`;
 
       setPhase("content");
 
-      // ── Phase 2: sequential sections but each section's calls optimised ──
-      // Sequential because qwen2.5:7b is single-GPU — parallel = no speedup, just memory pressure
+      // ── Phase 2: sequential sections ──
       const elements = [];
       elements.push({ id: nid(), type: "title", text: outline.title || "Document" });
 
@@ -2383,7 +2523,7 @@ JSON:`;
 /* ════════════════════════════════════════════════
    STEP 2 — TEMPLATE EDITOR (review + tweak generated content)
 ════════════════════════════════════════════════ */
-function Step2Editor({ elements, setElements, docStyles, setDocStyles, apiKey, model, onBack, onDone, setLoadingPhase, targetPages }) {
+function Step2Editor({ elements, setElements, docStyles, setDocStyles, onBack, onDone, setLoadingPhase, targetPages }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -2493,9 +2633,7 @@ function Step2Editor({ elements, setElements, docStyles, setDocStyles, apiKey, m
                 onUpdateBatch={patches => updateElBatch(el.id, patches)}
                 onRemove={() => removeEl(el.id)}
                 onMoveUp={() => moveUp(idx)}
-                onMoveDown={() => moveDown(idx)}
-                apiKey={apiKey}
-                model={model} />
+                onMoveDown={() => moveDown(idx)} />
             ))}
           </div>
 
@@ -2519,8 +2657,9 @@ function Step2Editor({ elements, setElements, docStyles, setDocStyles, apiKey, m
 function Step3Result({ result, onStartOver, onBack }) {
   const { filled, uint8, title } = result;
   const [showPreview, setShowPreview] = useState(false);
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false);
 
-  const download = () => {
+  const runFileDownload = () => {
     const name = (title.slice(0, 40).replace(/[^a-z0-9]/gi, "_") || "document") + ".docx";
     const blob = new Blob([uint8], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
     const url = URL.createObjectURL(blob);
@@ -2528,11 +2667,24 @@ function Step3Result({ result, onStartOver, onBack }) {
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   };
 
+  const confirmDownloadWithFeedback = async ({ rating, comment }) => {
+    await trackDownloadWithFeedback({ rating, comment });
+    runFileDownload();
+    setDownloadModalOpen(false);
+  };
+
   const totalParas = filled.filter(e => e.type === "paragraph" || e.type === "body").reduce((s, e) => s + (e.texts?.length || 1), 0)
     + filled.filter(e => e.type === "bullets").reduce((s, e) => s + (e.items?.length || 1), 0);
 
   return (
     <div className="w-full max-w-3xl mx-auto flex flex-col items-center py-10 text-center">
+      {downloadModalOpen && (
+        <DownloadFeedbackModal
+          docTitle={title}
+          onClose={() => setDownloadModalOpen(false)}
+          onConfirm={confirmDownloadWithFeedback}
+        />
+      )}
       {showPreview && <DocPreviewModal uint8={uint8} title={title} onClose={() => setShowPreview(false)} />}
 
       <div className="w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl font-black mb-8 shadow-[0_10px_32px_rgba(99,102,241,0.4)]" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>✓</div>
@@ -2562,7 +2714,7 @@ function Step3Result({ result, onStartOver, onBack }) {
         <button onClick={onBack} className="px-6 py-3.5 bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm hover:bg-slate-50 rounded-2xl text-[14px] font-bold transition-all">← Back to Review</button>
         <button onClick={() => setShowPreview(true)} className="px-6 py-3.5 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:border-indigo-300 rounded-2xl text-[14px] font-bold transition-all">◈ Preview</button>
         <button onClick={onStartOver} className="px-6 py-3.5 bg-white text-slate-600 border border-slate-200 hover:border-slate-300 shadow-sm hover:bg-slate-50 rounded-2xl text-[14px] font-bold transition-all">↺ Start Over</button>
-        <button onClick={download} className="px-8 py-3.5 text-white rounded-2xl text-[15px] font-bold shadow-[0_8px_20px_rgba(99,102,241,0.3)] hover:shadow-[0_8px_28px_rgba(99,102,241,0.45)] hover:scale-[1.02] transition-all" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>⬇ Download .docx</button>
+        <button type="button" onClick={() => setDownloadModalOpen(true)} className="px-8 py-3.5 text-white rounded-2xl text-[15px] font-bold shadow-[0_8px_20px_rgba(99,102,241,0.3)] hover:shadow-[0_8px_28px_rgba(99,102,241,0.45)] hover:scale-[1.02] transition-all" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>⬇ Download .docx</button>
       </div>
     </div>
   );
@@ -2627,13 +2779,25 @@ export default function CoreAppFlow() {
   });
   const [loadingPhase, setLoadingPhase] = useState(null);
 
-  const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || "";
-  const OPENAI_MODEL = import.meta.env.VITE_OPENAI_MODEL || "gpt-4o-mini";
+  useEffect(() => {
+    try {
+      const k = "docreplacer_last_session_track";
+      const now = Date.now();
+      const last = parseInt(sessionStorage.getItem(k) || "0", 10);
+      if (now - last < 1500) return;
+      sessionStorage.setItem(k, String(now));
+    } catch {
+      /* ignore */
+    }
+    recordSessionVisit();
+  }, []);
 
   useEffect(() => {
     if (!window.JSZip) {
       const s = document.createElement("script");
       s.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+      s.integrity = "sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==";
+      s.crossOrigin = "anonymous";
       document.head.appendChild(s);
     }
     const link = document.createElement("link");
@@ -2708,10 +2872,9 @@ export default function CoreAppFlow() {
 
             {step === 0 && (
               <Step1Prompt
-                apiKey={OPENAI_API_KEY}
-                model={OPENAI_MODEL}
                 setLoadingPhase={setLoadingPhase}
                 onDone={({ elements: els, docTitle, pages }) => {
+                  trackPromptSubmitted();
                   setElements(els);
                   setTargetPages(pages);
                   setStep(1);
@@ -2724,12 +2887,10 @@ export default function CoreAppFlow() {
                 setElements={setElements}
                 docStyles={docStyles}
                 setDocStyles={setDocStyles}
-                apiKey={OPENAI_API_KEY}
-                model={OPENAI_MODEL}
                 targetPages={targetPages}
                 setLoadingPhase={setLoadingPhase}
                 onBack={() => setStep(0)}
-                onDone={r => { setResult(r); setStep(2); }} />
+                onDone={r => { trackBuildDocx(); setResult(r); setStep(2); }} />
             )}
 
             {step === 2 && result && (
