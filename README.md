@@ -1,6 +1,6 @@
 # DocReplacer
 
-AI-powered document generation tool with local processing via Ollama.
+AI-powered document generation tool with cloud processing via Gemini 2.5 Flash.
 
 ## Setup
 
@@ -22,7 +22,7 @@ npm run build
 ## Requirements
 
 - Node.js 16+
-- Ollama (for AI features)
+- Gemini API Key (for AI features)
 
 ## Features
 

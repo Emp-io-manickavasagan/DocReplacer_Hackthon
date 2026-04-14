@@ -22,7 +22,7 @@ export default function LandingPage() {
         <meta name="description" content="Generate professional Microsoft Word (.docx) files instantly from text prompts. A 100% free, private, client-side AI document creator with no login required." />
         <meta name="keywords" content="Free AI Word document generator, client-side docx creator, generate docx from prompt, private AI document writer, OpenXML builder, no login word doc" />
         <link rel="canonical" href="https://docreplacer.com/" />
-        
+
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://docreplacer.com/" />
@@ -109,7 +109,7 @@ export default function LandingPage() {
               { label: 'Home', href: '#' },
               { label: 'Features', href: '#features' },
               { label: 'How It Works', href: '/how-it-works' },
-              { label: 'Engine', href: '/engine' },
+              // { label: 'Engine', href: '/engine' },
               { label: 'Use Cases', href: '/use-cases' },
               { label: 'Docs', href: '/docs' },
               { label: 'Blog', href: '/blog' },
@@ -144,7 +144,7 @@ export default function LandingPage() {
               { label: 'Home', href: '#' },
               { label: 'Features', href: '#features' },
               { label: 'How It Works', href: '/how-it-works' },
-              { label: 'Engine', href: '/engine' },
+              //{ label: 'Engine', href: '/engine' },
               { label: 'Use Cases', href: '/use-cases' },
               { label: 'Docs', href: '/docs' },
               { label: 'Blog', href: '/blog' },
@@ -381,7 +381,7 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="serif text-[32px] md:text-[42px] text-white mb-6">Built for <span className="italic text-white/50">Simplicity</span></h2>
           <p className="text-white/50 text-lg mb-10 max-w-2xl mx-auto font-medium">DocReplacer transforms your prompts into structured .docx files in three simple steps. No account tracking, no setup, just your local browser doing the work.</p>
-          
+
           <Link to="/how-it-works" className="inline-flex items-center gap-2 group px-6 py-3 rounded-full border border-white/10 hover:border-white/20 bg-white/[0.04] text-white font-semibold transition-all">
             See the full breakdown <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Link>
