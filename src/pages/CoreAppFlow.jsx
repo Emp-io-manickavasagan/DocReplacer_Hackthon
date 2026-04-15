@@ -73,32 +73,50 @@ const sanitizeUrl = (url) => {
 };
 
 /* ════════════════════════════════════════════════
-   OPENAI
+   GEMINI
 ════════════════════════════════════════════════ */
-const OLLAMA_BASE = import.meta.env.VITE_OLLAMA_BASE_URL || "http://localhost:11434";
-const OLLAMA_MODEL = import.meta.env.VITE_OLLAMA_MODEL || "qwen2.5:7b";
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || "gemini-2.5-flash";
+
+const GEMINI_STATUS_MESSAGES = {
+  400: "Bad request. Check your prompt or Gemini model name.",
+  401: "Invalid Gemini API key. Check VITE_GEMINI_API_KEY in your .env file.",
+  403: "Gemini API key does not have permission or quota exceeded.",
+  429: "Gemini rate limit exceeded. Please wait and try again.",
+  500: "Gemini encountered a server error. Please try again.",
+  503: "Gemini is temporarily overloaded. Retrying…",
+};
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function geminiRequest(url, body, retries = 4) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) return res;
+    const retryable = res.status === 503 || res.status === 429;
+    if (retryable && attempt < retries) {
+      await sleep(Math.min(1000 * 2 ** attempt + Math.random() * 500, 16000));
+      continue;
+    }
+    throw new Error(GEMINI_STATUS_MESSAGES[res.status] || `Gemini request failed (${res.status}).`);
+  }
+}
 
 async function callOpenAI(_apiKey, prompt, opts = {}) {
-  const res = await fetch(`${OLLAMA_BASE}/v1/chat/completions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: OLLAMA_MODEL,
-      messages: [{ role: "user", content: prompt }],
-      temperature: opts.temperature ?? 0.7,
-      max_tokens: opts.max_tokens || 4096,
-    }),
-  });
-  if (!res.ok) {
-    const statusMessages = {
-      404: "Model not found. Run: ollama pull qwen2.5:7b",
-      500: "Ollama encountered an error. Please try again.",
-      503: "Ollama is not running. Start it with: ollama serve",
-    };
-    throw new Error(statusMessages[res.status] || `Ollama request failed (${res.status}). Is it running?`);
-  }
+  if (!GEMINI_API_KEY) throw new Error("Gemini API key is missing. Set VITE_GEMINI_API_KEY in your .env file.");
+  const res = await geminiRequest(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+    {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: opts.temperature ?? 0.7, maxOutputTokens: opts.max_tokens || 4096 },
+    }
+  );
   const d = await res.json();
-  return d.choices?.[0]?.message?.content || "";
+  return d.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
 /* ════════════════════════════════════════════════
@@ -986,28 +1004,17 @@ ${paras.join("\n")}
 }
 
 /* ════════════════════════════════════════════════
-   OPENAI — STREAMING
+   GEMINI — STREAMING
 ════════════════════════════════════════════════ */
 async function* streamOpenAI(_apiKey, prompt, opts = {}) {
-  const res = await fetch(`${OLLAMA_BASE}/v1/chat/completions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: OLLAMA_MODEL,
-      messages: [{ role: "user", content: prompt }],
-      stream: true,
-      temperature: opts.temperature ?? 0.6,
-      max_tokens: opts.max_tokens || 6000,
-    }),
-  });
-  if (!res.ok) {
-    const statusMessages = {
-      404: "Model not found. Run: ollama pull qwen2.5:7b",
-      500: "Ollama encountered an error. Please try again.",
-      503: "Ollama is not running. Start it with: ollama serve",
-    };
-    throw new Error(statusMessages[res.status] || `Ollama request failed (${res.status}). Is it running?`);
-  }
+  if (!GEMINI_API_KEY) throw new Error("Gemini API key is missing. Set VITE_GEMINI_API_KEY in your .env file.");
+  const res = await geminiRequest(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
+    {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: opts.temperature ?? 0.6, maxOutputTokens: opts.max_tokens || 6000 },
+    }
+  );
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
@@ -1024,7 +1031,7 @@ async function* streamOpenAI(_apiKey, prompt, opts = {}) {
       if (dataStr === "[DONE]") return;
       try {
         const json = JSON.parse(dataStr);
-        const content = json.choices?.[0]?.delta?.content;
+        const content = json.candidates?.[0]?.content?.parts?.[0]?.text;
         if (content) yield content;
       } catch (_) { }
     }
@@ -2482,7 +2489,7 @@ JSON:`;
           What do you want to create?
         </h2>
         <p className="text-slate-500 text-base md:text-lg font-medium">
-          One prompt → full .docx, streamed in real time. No cloud.
+          One prompt → full .docx, streamed in real time. No cloud, no API key.
         </p>
       </div>
 
