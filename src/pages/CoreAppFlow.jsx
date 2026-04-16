@@ -73,27 +73,31 @@ const sanitizeUrl = (url) => {
 };
 
 /* ════════════════════════════════════════════════
-   GEMINI
+   GROQ
 ════════════════════════════════════════════════ */
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || "gemini-2.5-flash";
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
+const GROQ_MODEL = import.meta.env.VITE_GROQ_MODEL || "llama-3.3-70b-versatile";
 
-const GEMINI_STATUS_MESSAGES = {
-  400: "Bad request. Check your prompt or Gemini model name.",
-  401: "Invalid Gemini API key. Check VITE_GEMINI_API_KEY in your .env file.",
-  403: "Gemini API key does not have permission or quota exceeded.",
-  429: "Gemini rate limit exceeded. Please wait and try again.",
-  500: "Gemini encountered a server error. Please try again.",
-  503: "Gemini is temporarily overloaded. Retrying…",
+const GROQ_STATUS_MESSAGES = {
+  400: "Bad request. Check your prompt or Groq model name.",
+  401: "Invalid Groq API key. Check VITE_GROQ_API_KEY in your .env file.",
+  403: "Groq API key does not have permission or quota exceeded.",
+  429: "Groq rate limit exceeded. Please wait and try again.",
+  500: "Groq encountered a server error. Please try again.",
+  503: "Groq is temporarily overloaded. Retrying…",
 };
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function geminiRequest(url, body, retries = 5, onStatus = null) {
+async function groqRequest(body, retries = 5, onStatus = null) {
+  if (!GROQ_API_KEY) throw new Error("Groq API key is missing. Set VITE_GROQ_API_KEY in your .env file.");
   for (let attempt = 0; attempt <= retries; attempt++) {
-    const res = await fetch(url, {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${GROQ_API_KEY}`,
+      },
       body: JSON.stringify(body),
     });
     if (res.ok) return res;
@@ -117,23 +121,23 @@ async function geminiRequest(url, body, retries = 5, onStatus = null) {
       }
       continue;
     }
-    throw new Error(GEMINI_STATUS_MESSAGES[res.status] || `Gemini request failed (${res.status}).`);
+    throw new Error(GROQ_STATUS_MESSAGES[res.status] || `Groq request failed (${res.status}).`);
   }
 }
 
 async function callOpenAI(_apiKey, prompt, opts = {}) {
-  if (!GEMINI_API_KEY) throw new Error("Gemini API key is missing. Set VITE_GEMINI_API_KEY in your .env file.");
-  const res = await geminiRequest(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+  const res = await groqRequest(
     {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: opts.temperature ?? 0.7, maxOutputTokens: opts.max_tokens || 4096 },
+      model: GROQ_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      temperature: opts.temperature ?? 0.7,
+      max_tokens: opts.max_tokens || 4096,
     },
     5,
     opts.onStatus || null
   );
   const d = await res.json();
-  return d.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  return d.choices?.[0]?.message?.content || "";
 }
 
 /* ════════════════════════════════════════════════
@@ -1021,18 +1025,16 @@ ${paras.join("\n")}
 }
 
 /* ════════════════════════════════════════════════
-   GEMINI — STREAMING
+   GROQ — STREAMING
 ════════════════════════════════════════════════ */
 async function* streamOpenAI(_apiKey, prompt, opts = {}) {
-  if (!GEMINI_API_KEY) throw new Error("Gemini API key is missing. Set VITE_GEMINI_API_KEY in your .env file.");
-  const genConfig = { temperature: opts.temperature ?? 0.6, maxOutputTokens: opts.max_tokens || 6000 };
-  // Disable thinking tokens for JSON-only calls to prevent prose preamble before JSON
-  if (opts.thinkingBudget === 0) genConfig.thinkingConfig = { thinkingBudget: 0 };
-  const res = await geminiRequest(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
+  const res = await groqRequest(
     {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: genConfig,
+      model: GROQ_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      temperature: opts.temperature ?? 0.6,
+      max_tokens: opts.max_tokens || 6000,
+      stream: true,
     },
     5,
     opts.onStatus || null
@@ -1053,12 +1055,8 @@ async function* streamOpenAI(_apiKey, prompt, opts = {}) {
       if (dataStr === "[DONE]") return;
       try {
         const json = JSON.parse(dataStr);
-        // Skip thinking-chain parts (thought === true) — only yield real output text
-        const parts = json.candidates?.[0]?.content?.parts || [];
-        for (const part of parts) {
-          if (part.thought) continue;
-          if (part.text) yield part.text;
-        }
+        const delta = json.choices?.[0]?.delta?.content;
+        if (delta) yield delta;
       } catch (_) { }
     }
   }
@@ -1235,6 +1233,7 @@ function DocPreviewModal({ uint8, title, onClose }) {
 ════════════════════════════════════════════════ */
 function DownloadFeedbackModal({ docTitle, onClose, onConfirm }) {
   const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
 
   useEffect(() => {
@@ -1250,73 +1249,94 @@ function DownloadFeedbackModal({ docTitle, onClose, onConfirm }) {
 
   const modal = (
     <div
-      className="dr-modal-wrap fixed inset-0 z-[99998] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm"
+      className="dr-modal-wrap fixed inset-0 z-[99998] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-[0_24px_64px_rgba(0,0,0,0.25)] overflow-hidden text-left"
+        className="w-full max-w-[440px] rounded-[32px] border border-white/20 bg-white/95 shadow-[0_32px_80px_rgba(0,0,0,0.3)] overflow-hidden text-left animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 pt-6 pb-4 border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-violet-50">
-          <div className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1">Before you download</div>
-          <h3 className="db-serif text-xl text-slate-900 font-bold tracking-tight">Quick review</h3>
-          <p className="text-[13px] text-slate-600 mt-2 font-medium leading-relaxed">
-            Optional: rate your experience and leave a short note. We log this with your download to improve DocReplacer.
+        <div className="px-8 pt-8 pb-6 border-b border-slate-100 bg-gradient-to-br from-indigo-50/50 via-white to-violet-50/50">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <div className="text-[10px] font-bold text-indigo-600 uppercase tracking-[0.2em] mb-1.5 brand-font">Feedback</div>
+              <h3 className="db-serif text-2xl text-slate-900 font-bold tracking-tight">Quick review</h3>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">✕</button>
+          </div>
+          <p className="text-[14px] text-slate-500 font-medium leading-relaxed">
+            Rate your experience and leave a note. We log this with your download to improve DocReplacer.
           </p>
-          {docTitle ? (
-            <p className="text-[12px] text-slate-500 mt-2 font-medium truncate" title={docTitle}>
-              <span className="text-slate-400">Document:</span> {docTitle}
-            </p>
-          ) : null}
+          {docTitle && (
+            <div className="mt-4 flex items-center gap-2 bg-white/60 border border-slate-100 py-1.5 px-3 rounded-xl w-fit max-w-full">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Doc:</span>
+              <p className="text-[12px] text-indigo-600 font-bold truncate" title={docTitle}>{docTitle}</p>
+            </div>
+          )}
         </div>
-        <div className="px-6 py-5 space-y-5">
+
+        <div className="px-8 py-7 space-y-7">
           <div>
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Rating</div>
-            <div className="flex items-center gap-1">
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">Your Rating</div>
+            <div className="flex items-center gap-2">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
                   key={n}
                   type="button"
-                  aria-label={`${n} star${n > 1 ? "s" : ""}`}
                   onClick={() => setRating(n)}
-                  className={`text-3xl leading-none px-1 py-0.5 rounded-lg transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-indigo-300 ${n <= rating ? "text-amber-400" : "text-slate-200 hover:text-slate-300"}`}
+                  onMouseEnter={() => setHoverRating(n)}
+                  onMouseLeave={() => setHoverRating(0)}
+                  className="group relative transition-transform hover:scale-110 active:scale-95 focus:outline-none"
                 >
-                  ★
+                  <svg
+                    viewBox="0 0 24 24"
+                    className={`w-9 h-9 transition-all duration-300 ${(hoverRating || rating) >= n ? 'fill-amber-400 scale-110 drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]' : 'fill-slate-100 stroke-slate-200'} ${rating >= n ? 'fill-amber-400' : ''}`}
+                    stroke={rating >= n || hoverRating >= n ? 'transparent' : 'currentColor'}
+                    strokeWidth="1.5"
+                  >
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
                 </button>
               ))}
               {rating > 0 && (
-                <button type="button" onClick={() => setRating(0)} className="ml-2 text-[12px] font-semibold text-slate-400 hover:text-slate-600">
+                <button type="button" onClick={() => setRating(0)} className="ml-3 text-[12px] font-bold text-slate-400 hover:text-indigo-600 transition-colors">
                   Clear
                 </button>
               )}
             </div>
           </div>
+
           <div>
-            <label htmlFor="dr-download-feedback" className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Feedback</label>
+            <label htmlFor="dr-download-feedback" className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">Comments (Optional)</label>
             <textarea
               id="dr-download-feedback"
               rows={3}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="What worked well or what could be better?"
-              className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 bg-slate-50/80 text-slate-800 text-[14px] placeholder:text-slate-400 focus:outline-none focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100/50 resize-y font-medium"
+              className="w-full px-5 py-4 rounded-2xl border-2 border-slate-50 bg-slate-50/50 text-slate-800 text-[14px] placeholder:text-slate-400 focus:outline-none focus:border-indigo-200 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all resize-none font-medium"
               maxLength={2000}
             />
-            <p className="text-[11px] text-slate-400 mt-1 font-medium">{comment.length} / 2000</p>
+            <div className="flex justify-end mt-2">
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${comment.length > 1800 ? 'bg-red-50 text-red-500' : 'bg-slate-100 text-slate-400'}`}>
+                {comment.length} / 2000
+              </span>
+            </div>
           </div>
         </div>
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+
+        <div className="px-8 py-6 bg-slate-50/50 border-t border-slate-100 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-[14px] font-bold hover:bg-slate-100 transition-colors"
+            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl text-slate-500 text-[14px] font-bold hover:bg-slate-200/50 transition-colors"
           >
-            Cancel
+            Not now
           </button>
           <button
             type="button"
             onClick={() => onConfirm({ rating: rating || null, comment })}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl text-white text-[14px] font-bold shadow-[0_8px_20px_rgba(99,102,241,0.35)] hover:shadow-[0_8px_28px_rgba(99,102,241,0.45)] transition-all"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl text-white text-[15px] font-bold shadow-[0_12px_24px_rgba(99,102,241,0.3)] hover:shadow-[0_14px_32px_rgba(99,102,241,0.4)] hover:-translate-y-0.5 active:translate-y-0 transition-all"
             style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
           >
             ⬇ Download .docx
@@ -2109,7 +2129,7 @@ function Step1Prompt({ onDone, setLoadingPhase }) {
 
   /* ── JSON repair helper (only used for bullets/tables) ── */
   const parseJsonRobust = (raw) => {
-    // Step 0: Strip markdown code fences entirely (Gemini often wraps output in ```json ... ```)
+    // Step 0: Strip markdown code fences entirely (LLMs sometimes wrap output in ```json ... ```)
     let clean = raw
       .replace(/```json\s*/gi, "")
       .replace(/```\s*/g, "")
@@ -2196,7 +2216,7 @@ Quality requirements:
 
 JSON:`;
     let raw = "";
-    const gen = streamOpenAI("", p, { max_tokens: 900, temperature: 0.25, thinkingBudget: 0, onStatus: setStreamLog });
+    const gen = streamOpenAI("", p, { max_tokens: 900, temperature: 0.25, onStatus: setStreamLog });
     for await (const chunk of gen) {
       if (abortRef.current) return null;
       raw += chunk;
@@ -2276,7 +2296,7 @@ Return ONLY a valid JSON array of 5 strings. No markdown fences, no extra text:
 ["**Term One**: clear explanation of this point in 15 to 25 words","**Term Two**: explanation here",...]
 JSON:`;
     let raw = "";
-    const gen = streamOpenAI("", p, { max_tokens: 400, temperature: 0.6, thinkingBudget: 0, onStatus: setStreamLog });
+    const gen = streamOpenAI("", p, { max_tokens: 400, temperature: 0.6, onStatus: setStreamLog });
     for await (const chunk of gen) { if (abortRef.current) return null; raw += chunk; }
     try {
       const arr = parseJsonRobust(raw);
@@ -2305,7 +2325,7 @@ IMPORTANT: Return ONLY the raw JSON object — absolutely nothing else before or
 {"headers":["Header1","Header2","Header3"],"rows":[["val","val","val"],["val","val","val"],["val","val","val"],["val","val","val"]]}
 JSON:`;
     let raw = "";
-    const gen = streamOpenAI("", p, { max_tokens: 700, temperature: 0.25, thinkingBudget: 0, onStatus: setStreamLog });
+    const gen = streamOpenAI("", p, { max_tokens: 700, temperature: 0.25, onStatus: setStreamLog });
     for await (const chunk of gen) { if (abortRef.current) return null; raw += chunk; }
 
     // Multi-attempt extraction
@@ -2378,7 +2398,7 @@ Return ONLY a valid JSON array of exactly 2 strings (no markdown fences, no extr
 ["**Label A**: prose sentences here for column 1.","**Label B**: prose sentences here for column 2."]
 JSON:`;
     let raw = "";
-    const gen = streamOpenAI("", p, { max_tokens: 500, temperature: 0.4, thinkingBudget: 0, onStatus: setStreamLog });
+    const gen = streamOpenAI("", p, { max_tokens: 500, temperature: 0.4, onStatus: setStreamLog });
     for await (const chunk of gen) { if (abortRef.current) return null; raw += chunk; }
     try {
       const arr = parseJsonRobust(raw);
@@ -2781,8 +2801,9 @@ function Step3Result({ result, onStartOver, onBack }) {
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   };
 
-  const confirmDownloadWithFeedback = async ({ rating, comment }) => {
-    await trackDownloadWithFeedback({ rating, comment });
+  const confirmDownloadWithFeedback = ({ rating, comment }) => {
+    // Fire-and-forget: don't block the download on Firebase writes
+    trackDownloadWithFeedback({ rating, comment }).catch(() => {});
     runFileDownload();
     setDownloadModalOpen(false);
   };
@@ -2930,12 +2951,15 @@ export default function CoreAppFlow() {
 
   return (
     <div className="relative min-h-screen text-slate-900 font-sans overflow-hidden" style={{ background: '#f0f4ff' }}>
-      <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Outfit:wght@600;700&display=swap');
         body { font-family: 'DM Sans', sans-serif !important; }
         .db-serif { font-family: 'DM Serif Display', serif !important; }
         .db-mono { font-family: 'DM Mono', monospace !important; }
         .brand-font { font-family: 'Outfit', sans-serif !important; font-weight: 700 !important; letter-spacing: -0.02em !important; }
+        @keyframes drModalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes drModalSlideUp { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .animate-fade-in { animation: drModalFadeIn 0.3s ease-out forwards; }
+        .animate-slide-up { animation: drModalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       `}</style>
       {loadingPhase === "docx" && <LoadingOverlay phase="docx" />}
 
