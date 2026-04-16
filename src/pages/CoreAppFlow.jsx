@@ -89,7 +89,7 @@ const GEMINI_STATUS_MESSAGES = {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function geminiRequest(url, body, retries = 4) {
+async function geminiRequest(url, body, retries = 5, onStatus = null) {
   for (let attempt = 0; attempt <= retries; attempt++) {
     const res = await fetch(url, {
       method: "POST",
@@ -97,9 +97,24 @@ async function geminiRequest(url, body, retries = 4) {
       body: JSON.stringify(body),
     });
     if (res.ok) return res;
-    const retryable = res.status === 503 || res.status === 429;
+    const is429 = res.status === 429;
+    const retryable = res.status === 503 || is429;
     if (retryable && attempt < retries) {
-      await sleep(Math.min(1000 * 2 ** attempt + Math.random() * 500, 16000));
+      let delay;
+      if (is429) {
+        const retryAfter = res.headers.get("Retry-After");
+        delay = retryAfter
+          ? (parseFloat(retryAfter) + 1) * 1000
+          : Math.min(5000 * 2 ** attempt + Math.random() * 1000, 65000);
+      } else {
+        delay = Math.min(1000 * 2 ** attempt + Math.random() * 500, 16000);
+      }
+      const label = is429 ? "Rate limited" : "Server busy";
+      const totalSecs = Math.ceil(delay / 1000);
+      for (let s = totalSecs; s > 0; s--) {
+        onStatus?.(`⏳ ${label} — retrying in ${s}s (attempt ${attempt + 1}/${retries})…`);
+        await sleep(1000);
+      }
       continue;
     }
     throw new Error(GEMINI_STATUS_MESSAGES[res.status] || `Gemini request failed (${res.status}).`);
@@ -113,7 +128,9 @@ async function callOpenAI(_apiKey, prompt, opts = {}) {
     {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: { temperature: opts.temperature ?? 0.7, maxOutputTokens: opts.max_tokens || 4096 },
-    }
+    },
+    5,
+    opts.onStatus || null
   );
   const d = await res.json();
   return d.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -1008,12 +1025,17 @@ ${paras.join("\n")}
 ════════════════════════════════════════════════ */
 async function* streamOpenAI(_apiKey, prompt, opts = {}) {
   if (!GEMINI_API_KEY) throw new Error("Gemini API key is missing. Set VITE_GEMINI_API_KEY in your .env file.");
+  const genConfig = { temperature: opts.temperature ?? 0.6, maxOutputTokens: opts.max_tokens || 6000 };
+  // Disable thinking tokens for JSON-only calls to prevent prose preamble before JSON
+  if (opts.thinkingBudget === 0) genConfig.thinkingConfig = { thinkingBudget: 0 };
   const res = await geminiRequest(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
     {
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: opts.temperature ?? 0.6, maxOutputTokens: opts.max_tokens || 6000 },
-    }
+      generationConfig: genConfig,
+    },
+    5,
+    opts.onStatus || null
   );
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -1031,8 +1053,12 @@ async function* streamOpenAI(_apiKey, prompt, opts = {}) {
       if (dataStr === "[DONE]") return;
       try {
         const json = JSON.parse(dataStr);
-        const content = json.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (content) yield content;
+        // Skip thinking-chain parts (thought === true) — only yield real output text
+        const parts = json.candidates?.[0]?.content?.parts || [];
+        for (const part of parts) {
+          if (part.thought) continue;
+          if (part.text) yield part.text;
+        }
       } catch (_) { }
     }
   }
@@ -2083,25 +2109,30 @@ function Step1Prompt({ onDone, setLoadingPhase }) {
 
   /* ── JSON repair helper (only used for bullets/tables) ── */
   const parseJsonRobust = (raw) => {
-    // Strip code fences and trim
-    let clean = raw.replace(/```json[\s\S]*?```/gi, m => m.replace(/```json|```/gi, ""))
-      .replace(/```/g, "").trim();
+    // Step 0: Strip markdown code fences entirely (Gemini often wraps output in ```json ... ```)
+    let clean = raw
+      .replace(/```json\s*/gi, "")
+      .replace(/```\s*/g, "")
+      .trim();
     // Strip leading prose before first [ or {
     const fb = clean.search(/[\[{]/);
     if (fb > 0) clean = clean.slice(fb);
+    // Also strip anything after the last matching ] or }
+    const lastClose = Math.max(clean.lastIndexOf("]"), clean.lastIndexOf("}"));
+    if (lastClose !== -1 && lastClose < clean.length - 1) clean = clean.slice(0, lastClose + 1);
     // 1. Direct parse
     try { return JSON.parse(clean); } catch (_) { }
     // 2. sanitiseJsonStr (handles unescaped newlines/tabs/quotes inside strings + smart quotes + trailing commas)
     try { return JSON.parse(sanitiseJsonStr(clean)); } catch (_) { }
     // 3. Extract outermost [...] or {...}
     const m = clean.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
-    if (!m) throw new Error("No JSON");
+    if (!m) throw new Error("AI returned no JSON. The model may be overloaded — please try again.");
     const s = m[0];
     // 4. sanitise extracted block
     try { return JSON.parse(sanitiseJsonStr(s)); } catch (_) { }
     // 5. repair truncation then sanitise
     try { return JSON.parse(sanitiseJsonStr(repairTruncated(s))); } catch (_) { }
-    throw new Error("parseJsonRobust: all repair attempts failed");
+    throw new Error("AI response could not be parsed. Please try again.");
   };
 
   /* ── PHASE 1: fast outline (~600 tokens, plain JSON) ── */
@@ -2165,7 +2196,7 @@ Quality requirements:
 
 JSON:`;
     let raw = "";
-    const gen = streamOpenAI("", p, { max_tokens: 900, temperature: 0.25 });
+    const gen = streamOpenAI("", p, { max_tokens: 900, temperature: 0.25, thinkingBudget: 0, onStatus: setStreamLog });
     for await (const chunk of gen) {
       if (abortRef.current) return null;
       raw += chunk;
@@ -2212,6 +2243,7 @@ Paragraphs:`;
     const gen = streamOpenAI("", p, {
       max_tokens: numParas * (wordsPerPara + 60) * 2,
       temperature: 0.35,
+      onStatus: setStreamLog,
     });
     for await (const chunk of gen) {
       if (abortRef.current) return null;
@@ -2244,7 +2276,7 @@ Return ONLY a valid JSON array of 5 strings. No markdown fences, no extra text:
 ["**Term One**: clear explanation of this point in 15 to 25 words","**Term Two**: explanation here",...]
 JSON:`;
     let raw = "";
-    const gen = streamOpenAI("", p, { max_tokens: 400, temperature: 0.6 });
+    const gen = streamOpenAI("", p, { max_tokens: 400, temperature: 0.6, thinkingBudget: 0, onStatus: setStreamLog });
     for await (const chunk of gen) { if (abortRef.current) return null; raw += chunk; }
     try {
       const arr = parseJsonRobust(raw);
@@ -2273,7 +2305,7 @@ IMPORTANT: Return ONLY the raw JSON object — absolutely nothing else before or
 {"headers":["Header1","Header2","Header3"],"rows":[["val","val","val"],["val","val","val"],["val","val","val"],["val","val","val"]]}
 JSON:`;
     let raw = "";
-    const gen = streamOpenAI("", p, { max_tokens: 700, temperature: 0.25 });
+    const gen = streamOpenAI("", p, { max_tokens: 700, temperature: 0.25, thinkingBudget: 0, onStatus: setStreamLog });
     for await (const chunk of gen) { if (abortRef.current) return null; raw += chunk; }
 
     // Multi-attempt extraction
@@ -2346,7 +2378,7 @@ Return ONLY a valid JSON array of exactly 2 strings (no markdown fences, no extr
 ["**Label A**: prose sentences here for column 1.","**Label B**: prose sentences here for column 2."]
 JSON:`;
     let raw = "";
-    const gen = streamOpenAI("", p, { max_tokens: 500, temperature: 0.4 });
+    const gen = streamOpenAI("", p, { max_tokens: 500, temperature: 0.4, thinkingBudget: 0, onStatus: setStreamLog });
     for await (const chunk of gen) { if (abortRef.current) return null; raw += chunk; }
     try {
       const arr = parseJsonRobust(raw);
