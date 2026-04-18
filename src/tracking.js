@@ -1,7 +1,7 @@
 import {
   doc,
   runTransaction,
-  updateDoc,
+  setDoc,
   increment,
   serverTimestamp,
   collection,
@@ -85,10 +85,10 @@ export async function recordSessionVisit() {
         /* ignore */
       }
     } else {
-      await updateDoc(userRef(visitorId), {
+      await setDoc(userRef(visitorId), {
         lastVisitAt: serverTimestamp(),
         visitCount: increment(1),
-      });
+      }, { merge: true });
     }
   } catch (e) {
     console.warn("[tracking] recordSessionVisit failed", e);
@@ -98,10 +98,10 @@ export async function recordSessionVisit() {
 export async function trackPromptSubmitted() {
   if (!db) return;
   try {
-    await updateDoc(userRef(getVisitorId()), {
+    await setDoc(userRef(getVisitorId()), {
       promptCount: increment(1),
       lastPromptAt: serverTimestamp(),
-    });
+    }, { merge: true });
   } catch (e) {
     console.warn("[tracking] trackPromptSubmitted failed", e);
   }
@@ -110,10 +110,10 @@ export async function trackPromptSubmitted() {
 export async function trackBuildDocx() {
   if (!db) return;
   try {
-    await updateDoc(userRef(getVisitorId()), {
+    await setDoc(userRef(getVisitorId()), {
       buildDocxCount: increment(1),
       lastBuildDocxAt: serverTimestamp(),
-    });
+    }, { merge: true });
   } catch (e) {
     console.warn("[tracking] trackBuildDocx failed", e);
   }
@@ -133,12 +133,12 @@ export async function trackDownloadWithFeedback(opts = {}) {
     typeof opts.comment === "string" ? opts.comment.trim().slice(0, 2000) : "";
 
   try {
-    await updateDoc(userRef(visitorId), {
+    await setDoc(userRef(visitorId), {
       downloadCount: increment(1),
       lastDownloadAt: serverTimestamp(),
       lastDownloadRating: rating,
       lastDownloadComment: comment || null,
-    });
+    }, { merge: true });
   } catch (e) {
     console.warn("[tracking] trackDownload user update failed", e);
   }

@@ -13,8 +13,8 @@ const firebaseConfig = {
 function configOk() {
   return Boolean(
     firebaseConfig.apiKey &&
-      firebaseConfig.projectId &&
-      firebaseConfig.appId
+    firebaseConfig.projectId &&
+    firebaseConfig.appId
   );
 }
 

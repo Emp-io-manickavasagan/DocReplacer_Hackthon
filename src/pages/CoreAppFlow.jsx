@@ -73,50 +73,71 @@ const sanitizeUrl = (url) => {
 };
 
 /* ════════════════════════════════════════════════
-   GEMINI
+   GROQ
 ════════════════════════════════════════════════ */
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || "gemini-2.5-flash";
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
+const GROQ_MODEL = import.meta.env.VITE_GROQ_MODEL || "llama-3.3-70b-versatile";
 
-const GEMINI_STATUS_MESSAGES = {
-  400: "Bad request. Check your prompt or Gemini model name.",
-  401: "Invalid Gemini API key. Check VITE_GEMINI_API_KEY in your .env file.",
-  403: "Gemini API key does not have permission or quota exceeded.",
-  429: "Gemini rate limit exceeded. Please wait and try again.",
-  500: "Gemini encountered a server error. Please try again.",
-  503: "Gemini is temporarily overloaded. Retrying…",
+const GROQ_STATUS_MESSAGES = {
+  400: "Bad request. Check your prompt or Groq model name.",
+  401: "Invalid Groq API key. Check VITE_GROQ_API_KEY in your .env file.",
+  403: "Groq API key does not have permission or quota exceeded.",
+  429: "Groq rate limit exceeded. Please wait and try again.",
+  500: "Groq encountered a server error. Please try again.",
+  503: "Groq is temporarily overloaded. Retrying…",
 };
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function geminiRequest(url, body, retries = 4) {
+async function groqRequest(body, retries = 5, onStatus = null) {
+  if (!GROQ_API_KEY) throw new Error("Groq API key is missing. Set VITE_GROQ_API_KEY in your .env file.");
   for (let attempt = 0; attempt <= retries; attempt++) {
-    const res = await fetch(url, {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${GROQ_API_KEY}`,
+      },
       body: JSON.stringify(body),
     });
     if (res.ok) return res;
-    const retryable = res.status === 503 || res.status === 429;
+    const is429 = res.status === 429;
+    const retryable = res.status === 503 || is429;
     if (retryable && attempt < retries) {
-      await sleep(Math.min(1000 * 2 ** attempt + Math.random() * 500, 16000));
+      let delay;
+      if (is429) {
+        const retryAfter = res.headers.get("Retry-After");
+        delay = retryAfter
+          ? (parseFloat(retryAfter) + 1) * 1000
+          : Math.min(5000 * 2 ** attempt + Math.random() * 1000, 65000);
+      } else {
+        delay = Math.min(1000 * 2 ** attempt + Math.random() * 500, 16000);
+      }
+      const label = is429 ? "Rate limited" : "Server busy";
+      const totalSecs = Math.ceil(delay / 1000);
+      for (let s = totalSecs; s > 0; s--) {
+        onStatus?.(`⏳ ${label} — retrying in ${s}s (attempt ${attempt + 1}/${retries})…`);
+        await sleep(1000);
+      }
       continue;
     }
-    throw new Error(GEMINI_STATUS_MESSAGES[res.status] || `Gemini request failed (${res.status}).`);
+    throw new Error(GROQ_STATUS_MESSAGES[res.status] || `Groq request failed (${res.status}).`);
   }
 }
 
 async function callOpenAI(_apiKey, prompt, opts = {}) {
-  if (!GEMINI_API_KEY) throw new Error("Gemini API key is missing. Set VITE_GEMINI_API_KEY in your .env file.");
-  const res = await geminiRequest(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+  const res = await groqRequest(
     {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: opts.temperature ?? 0.7, maxOutputTokens: opts.max_tokens || 4096 },
-    }
+      model: GROQ_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      temperature: opts.temperature ?? 0.7,
+      max_tokens: opts.max_tokens || 4096,
+    },
+    5,
+    opts.onStatus || null
   );
   const d = await res.json();
-  return d.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  return d.choices?.[0]?.message?.content || "";
 }
 
 /* ════════════════════════════════════════════════
@@ -581,30 +602,11 @@ function makeTableXml(headers, rows, docStyles) {
 }
 
 function makeColumnsXml(texts, numCols, docStyles) {
-  // Use native Word w:cols section approach instead of a table.
-  // A <w:sectPr type="continuous"> with w:cols switches the page into N columns,
-  // then a second continuous sectPr switches back to 1 column.
-  // This renders correctly in both Word and docx-preview (no fake table borders).
-  const s = (docStyles || DEFAULT_DOC_STYLES).paragraph || (docStyles || DEFAULT_DOC_STYLES).body || DEFAULT_DOC_STYLES.paragraph;
-  const font = s.font || "Times New Roman";
-  const szHp = pt2hp(s.size);
-  const col = hexCol(s.color);
-  const ls = ls2dxa(s.lineSpacing || 1.5);
-  const aft = pt2dxa(s.marginBottom || 8);
-  const jc = wAlign(s.align || "justify");
+  // Render each column's text as sequential paragraphs (vertical, no side-by-side).
+  // Uses makeRichParaXml so **bold** / _italic_ markdown renders correctly.
   const n = Math.min(Math.max(numCols || 2, 2), 3);
-
-  // 720 twips (~0.5") gutter between columns
-  const gutterDxa = 720;
-  const colsDef = Array(n).fill(null).map(() => `<w:col w:space="${gutterDxa}"/>`).join("");
-
-  const pPr = `<w:pPr><w:pStyle w:val="ProfessionalBody"/><w:jc w:val="${jc}"/><w:spacing w:line="${ls}" w:lineRule="auto" w:after="${aft}"/></w:pPr>`;
-  const rPr = `<w:rPr><w:rFonts w:ascii="${font}" w:hAnsi="${font}" w:cs="${font}"/><w:sz w:val="${szHp}"/><w:szCs w:val="${szHp}"/><w:color w:val="${col}"/></w:rPr>`;
-
   const arr = Array.isArray(texts) ? texts : Array(n).fill("");
-
-  // Insert column breaks between columns (after the last para of each column except the last)
-  const colParaGroups = arr.slice(0, n).map(textOrArr => {
+  return arr.slice(0, n).flatMap(textOrArr => {
     let paras;
     if (Array.isArray(textOrArr)) {
       paras = textOrArr.flatMap(v => Array.isArray(v) ? v.map(String) : [String(v ?? "")]).filter(Boolean);
@@ -612,21 +614,8 @@ function makeColumnsXml(texts, numCols, docStyles) {
       paras = [String(textOrArr ?? "")];
     }
     if (!paras.length) paras = [""];
-    return paras.map(t => `<w:p>${pPr}<w:r>${rPr}<w:t xml:space="preserve">${xmlEsc(t)}</w:t></w:r></w:p>`);
-  });
-
-  // Inject a column-break paragraph between groups
-  const colBreakPara = `<w:p><w:pPr><w:pStyle w:val="ProfessionalBody"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="${font}" w:hAnsi="${font}"/></w:rPr><w:br w:type="column"/></w:r></w:p>`;
-  const bodyParas = colParaGroups.flatMap((group, i) =>
-    i < colParaGroups.length - 1 ? [...group, colBreakPara] : group
-  ).join("\n");
-
-  // sectPr that enables N columns (continuous — no page break)
-  const colsSectPr = `<w:p><w:pPr><w:sectPr><w:type w:val="continuous"/><w:cols w:num="${n}" w:space="${gutterDxa}" w:equalWidth="1">${colsDef}</w:cols></w:sectPr></w:pPr></w:p>`;
-  // sectPr that restores single column (continuous)
-  const singleColSectPr = `<w:p><w:pPr><w:sectPr><w:type w:val="continuous"/><w:cols w:num="1"/></w:sectPr></w:pPr></w:p>`;
-
-  return `${colsSectPr}\n${bodyParas}\n${singleColSectPr}`;
+    return paras.map(t => makeRichParaXml(t, "paragraph", docStyles));
+  }).join("\n");
 }
 
 function makeHyperlinkXml(text, url, rId, bold, italic, docStyles) {
@@ -1004,16 +993,19 @@ ${paras.join("\n")}
 }
 
 /* ════════════════════════════════════════════════
-   GEMINI — STREAMING
+   GROQ — STREAMING
 ════════════════════════════════════════════════ */
 async function* streamOpenAI(_apiKey, prompt, opts = {}) {
-  if (!GEMINI_API_KEY) throw new Error("Gemini API key is missing. Set VITE_GEMINI_API_KEY in your .env file.");
-  const res = await geminiRequest(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
+  const res = await groqRequest(
     {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: opts.temperature ?? 0.6, maxOutputTokens: opts.max_tokens || 6000 },
-    }
+      model: GROQ_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      temperature: opts.temperature ?? 0.6,
+      max_tokens: opts.max_tokens || 6000,
+      stream: true,
+    },
+    5,
+    opts.onStatus || null
   );
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -1031,8 +1023,8 @@ async function* streamOpenAI(_apiKey, prompt, opts = {}) {
       if (dataStr === "[DONE]") return;
       try {
         const json = JSON.parse(dataStr);
-        const content = json.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (content) yield content;
+        const delta = json.choices?.[0]?.delta?.content;
+        if (delta) yield delta;
       } catch (_) { }
     }
   }
@@ -2083,89 +2075,54 @@ function Step1Prompt({ onDone, setLoadingPhase }) {
 
   /* ── JSON repair helper (only used for bullets/tables) ── */
   const parseJsonRobust = (raw) => {
-    // Strip code fences and trim
-    let clean = raw.replace(/```json[\s\S]*?```/gi, m => m.replace(/```json|```/gi, ""))
-      .replace(/```/g, "").trim();
+    // Step 0: Strip markdown code fences entirely (LLMs sometimes wrap output in ```json ... ```)
+    let clean = raw
+      .replace(/```json\s*/gi, "")
+      .replace(/```\s*/g, "")
+      .trim();
     // Strip leading prose before first [ or {
     const fb = clean.search(/[\[{]/);
     if (fb > 0) clean = clean.slice(fb);
+    // Also strip anything after the last matching ] or }
+    const lastClose = Math.max(clean.lastIndexOf("]"), clean.lastIndexOf("}"));
+    if (lastClose !== -1 && lastClose < clean.length - 1) clean = clean.slice(0, lastClose + 1);
     // 1. Direct parse
     try { return JSON.parse(clean); } catch (_) { }
     // 2. sanitiseJsonStr (handles unescaped newlines/tabs/quotes inside strings + smart quotes + trailing commas)
     try { return JSON.parse(sanitiseJsonStr(clean)); } catch (_) { }
     // 3. Extract outermost [...] or {...}
     const m = clean.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
-    if (!m) throw new Error("No JSON");
+    if (!m) throw new Error("AI returned no JSON. The model may be overloaded — please try again.");
     const s = m[0];
     // 4. sanitise extracted block
     try { return JSON.parse(sanitiseJsonStr(s)); } catch (_) { }
     // 5. repair truncation then sanitise
     try { return JSON.parse(sanitiseJsonStr(repairTruncated(s))); } catch (_) { }
-    throw new Error("parseJsonRobust: all repair attempts failed");
+    throw new Error("AI response could not be parsed. Please try again.");
   };
 
-  /* ── PHASE 1: fast outline (~600 tokens, plain JSON) ── */
+  /* ── PHASE 1: fast outline ── */
   const getOutline = async () => {
-    // Content density guidance based on page count
     const densityNote = pages <= 2
-      ? `This is a SHORT document (${pages} page). Use simple, focused sections. Avoid tables and columns. Use bullets sparingly. Prefer direct prose sections.`
+      ? `SHORT doc (${pages}p): prose only, no columns, minimal bullets, max 1 table.`
       : pages <= 4
-        ? `This is a STANDARD document (${pages} pages). Mix prose sections with 1–2 bullet lists and at most 1 table. Use h2 subsections only where genuinely needed.`
+        ? `STANDARD doc (${pages}p): 1–2 bullet sections, max 1 table, h2s only where needed.`
         : pages <= 7
-          ? `This is a DETAILED document (${pages} pages). Use varied section types: include h2 subsections inside major h1 sections, at least 1 table, 2–3 bullet sections, and optionally 1 columns layout.`
-          : `This is a COMPREHENSIVE document (${pages} pages). Use rich structure: multiple h1 sections each with h2 subsections, tables, bullet lists, columns layouts, and hr dividers. Spread varied block types throughout.`;
+          ? `DETAILED doc (${pages}p): h2 subsections, 1 table, 2–3 bullet sections, optionally 1 columns.`
+          : `COMPREHENSIVE doc (${pages}p): rich structure — h2s, tables, bullets, columns, hr dividers.`;
 
     const p =
-      `You are an expert document architect specializing in ${docType} documents.
-
-Task: Create a fully dynamic, intelligent outline for the following topic.
+      `Expert document architect. Create outline JSON for a ${docType}.
 Topic: "${prompt.trim()}"
-Document type: ${docType}
-Target pages: ${pages}
-Section count: Generate EXACTLY ${targetSectionCount} top-level sections (h1). Do not deviate.
-
+Sections: EXACTLY ${targetSectionCount} h1s. First="Introduction", last="Conclusion".
 ${densityNote}
-
-CRITICAL SECTION RULE:
-- If the user's topic explicitly names specific sections, chapters, or subtopics, use EXACTLY those as your h1 sections (in that order)
-- If the topic is general, choose the most logical, informative, and varied sections for the topic
-- First h1 must always be "Introduction"; last must always be "Conclusion" or "Summary"
-
-BLOCK TYPES — you choose freely which to include per section:
-Each section can have "extras" (array of block types to add after body paragraphs):
-- "h2:Subsection Title" → a subsection heading with its own paragraph (use for long sections needing sub-topics)
-- "bullets"             → key points, steps, requirements, pros/cons, action items
-- "table"               → comparisons, specs, metrics, data (max 1 per section)
-- "columns"             → ONLY for explicitly parallel/contrasting dual topics (e.g. Pros vs Cons, Before vs After, Option A vs Option B). MAX 1 total in entire document. Only allowed on pages ≥ 5. NEVER use for narrative, descriptive, or implementation/technology sections.
-- "hr"                  → visual section divider (max 2 total in whole document)
-- []                    → pure prose, no extras
-
-AI INTELLIGENCE RULES:
-- You MUST choose the best block types for each section based on its content — don't apply the same pattern to all sections
-- Vary the structure: not every section should have bullets; not every section needs a table
-- Use h2 subsections when a section has multiple distinct sub-topics (especially for pages ≥ 4)
-- Use "columns" ONLY when two genuinely parallel or contrasting topics exist (e.g. Pros vs Cons, Before vs After). Do NOT use for sections about technology, implementation, strategy, or any section that flows as narrative prose.
-- Use "table" only for sections with comparative/structured data — never force a table into a narrative section
-- Short documents (1–4 pages): NO columns at all — use [] or "bullets" instead
-- Long documents (5+ pages): optionally 1 columns block, only if a section has truly parallel content
-
-Respond with ONLY valid JSON — no markdown fences, no commentary:
-{"title":"Specific Descriptive Title","sections":[
-  {"heading":"Introduction","extras":[]},
-  {"heading":"Core Analysis","extras":["h2:Key Factors","bullets"]},
-  {"heading":"Data Comparison","extras":["hr","table"]},
-  {"heading":"Strategic Recommendations","extras":["h2:Short-term Actions","h2:Long-term Roadmap","columns"]},
-  {"heading":"Conclusion","extras":[]}
-]}
-
-Quality requirements:
-- Section headings must be specific and meaningful — NEVER generic like "Overview", "Details", "Section 1"
-- The document title must be concise, professional, and directly describe the topic
-- Spread different block types across sections — avoid clustering all bullets or all tables together
-
+Extras per section (after body): "h2:Title"|"bullets"|"table"|"columns"(≥5p, max 1 total, truly parallel only)|"hr"(max 2 total)|[]
+Rules: vary block types; no generic headings; columns only for Pros/Cons-style contrast; table only for structured data.
+ONLY valid JSON:
+{"title":"...","sections":[{"heading":"Introduction","extras":[]},{"heading":"...","extras":["bullets"]},{"heading":"Conclusion","extras":[]}]}
 JSON:`;
     let raw = "";
-    const gen = streamOpenAI("", p, { max_tokens: 900, temperature: 0.25 });
+    const gen = streamOpenAI("", p, { max_tokens: 600, temperature: 0.25, onStatus: setStreamLog });
     for await (const chunk of gen) {
       if (abortRef.current) return null;
       raw += chunk;
@@ -2174,44 +2131,23 @@ JSON:`;
     return parseJsonRobust(raw);
   };
 
-  /* ── PHASE 2a: plain-text body paragraphs (no JSON overhead) ── */
+  /* ── PHASE 2a: plain-text body paragraphs ── */
   const fillBodySection = async (docTitle, heading, numParas, previousSummary, onProgress) => {
     const contextNote = previousSummary
-      ? `Context so far (do NOT repeat these ideas): ${previousSummary}`
-      : `This is the opening section — set the stage without referring to prior content.`;
+      ? `Do NOT repeat: ${previousSummary}`
+      : `Opening section — set the stage.`;
     const p =
-      `You are a professional ${docType} writer. Write ${numParas} cohesive body paragraph(s) for a section in a document.
-
-Document title: "${docTitle}"
-Section heading: "${heading}"
-Document type: ${docType}
-Target length per paragraph: ${wordsPerPara}–${wordsPerPara + 50} words
-
-${contextNote}
-
-Writing requirements:
-- Write detailed, authoritative prose appropriate for a ${docType} document
-- Each paragraph must focus on a distinct aspect or sub-topic of the section
-- Paragraphs must flow naturally from one to the next with logical transitions
-- Separate each paragraph with a single blank line
-
-Inline formatting (only where it genuinely improves clarity):
-- **bold** → key terms, critical concepts (2–4 times per paragraph maximum)
-- _italic_ → titles of works, technical jargon (use sparingly)
-
-STRICT PROHIBITIONS — violating any of these rules is an error:
-- NO bolding of random keywords or decorative phrases
-- NO opening sentences like "In this section we will discuss..." or "This section covers..."
-- NO closing summary sentences like "In conclusion..." or "To summarize..." inside body paragraphs
-- NO filler phrases: "In today's fast-paced world", "Moreover", "Furthermore", "It is worth noting", "It is a testament to"
-- NO made-up statistics or fabricated case studies
-- NO headings, bullet points, JSON, preamble, or sign-off text
-
+      `${docType} writer. Write ${numParas} body paragraph(s).
+Doc: "${docTitle}" | Section: "${heading}"
+${wordsPerPara}–${wordsPerPara + 50} words each. ${contextNote}
+Rules: distinct aspects per para, natural transitions, **bold** key terms (2–4/para), _italic_ for jargon.
+NO: "In this section…", closing summaries, filler phrases, fake stats, headings, bullets, JSON.
 Paragraphs:`;
     let raw = "";
     const gen = streamOpenAI("", p, {
-      max_tokens: numParas * (wordsPerPara + 60) * 2,
+      max_tokens: Math.min(numParas * (wordsPerPara + 50) * 2, 1200),
       temperature: 0.35,
+      onStatus: setStreamLog,
     });
     for await (const chunk of gen) {
       if (abortRef.current) return null;
@@ -2223,75 +2159,52 @@ Paragraphs:`;
     return paras.length ? paras : [raw.trim()];
   };
 
-  /* ── PHASE 2b: bullets (tiny JSON call) ── */
-  const fillBullets = async (docTitle, heading) => {
+  /* ── PHASE 2b–d: batched extras (bullets + table + columns in ONE call) ── */
+  const fillExtras = async (docTitle, heading, extrasNeeded) => {
+    // extrasNeeded: array of "bullets" | "table" | "columns"
+    if (!extrasNeeded.length) return {};
+
+    const parts = [];
+    if (extrasNeeded.includes("bullets"))
+      parts.push(`"bullets": JSON array of exactly 5 strings, each "**Bold Term**: 15–25 word explanation"`);
+    if (extrasNeeded.includes("table"))
+      parts.push(`"table": {"headers":["H1","H2","H3"],"rows":[4 rows of 3 specific values each]} — meaningful headers for "${heading}", NO generic names`);
+    if (extrasNeeded.includes("columns"))
+      parts.push(`"columns": array of exactly 2 strings, each starting "**Label**: 2–3 sentences" representing genuinely contrasting aspects of "${heading}"`);
+
     const p =
-      `You are a professional ${docType} writer creating concise, high-impact bullet points.
-
-Document title: "${docTitle}"
-Section: "${heading}"
-Document type: ${docType}
-
-Write exactly 5 bullet points that capture the most important takeaways, features, or steps for this section.
-
-Formatting rules:
-- Start each bullet with **Bold Key Term** or **Bold Short Phrase** followed by a colon and explanation
-- Explanation should be 15–25 words — specific, informative, and actionable
-- Use _italic_ sparingly for technical terms or titles within the explanation
-- Each bullet must be distinct — no overlapping content
-
-Return ONLY a valid JSON array of 5 strings. No markdown fences, no extra text:
-["**Term One**: clear explanation of this point in 15 to 25 words","**Term Two**: explanation here",...]
+      `${docType} writer. Doc: "${docTitle}" | Section: "${heading}"
+Return ONE JSON object with ONLY these keys: ${extrasNeeded.join(", ")}
+${parts.join("\n")}
+NO markdown fences, no extra text.
 JSON:`;
+
     let raw = "";
-    const gen = streamOpenAI("", p, { max_tokens: 400, temperature: 0.6 });
-    for await (const chunk of gen) { if (abortRef.current) return null; raw += chunk; }
-    try {
-      const arr = parseJsonRobust(raw);
-      return Array.isArray(arr) ? arr.map(String).filter(Boolean) : [];
-    } catch (_) {
-      return raw.split("\n").map(l => l.replace(/^[-•*\d.]+\s*/, "").trim()).filter(l => l.length > 10).slice(0, 6);
-    }
-  };
-
-  /* ── PHASE 2c: table (tiny JSON call) ── */
-  const fillTable = async (docTitle, heading) => {
-    const p =
-      `You are a professional ${docType} writer. Create a structured data table for a document section.
-
-Document title: "${docTitle}"
-Section: "${heading}"
-Document type: ${docType}
-
-Table requirements:
-- Invent 3 column headers that are SPECIFIC and MEANINGFUL for "${heading}" — e.g. for a finance section use "Revenue", "Growth %", "Region"; for a comparison use "Feature", "Option A", "Option B"; for a timeline use "Year", "Milestone", "Impact"
-- NEVER use generic headers like "Aspect", "Item", "Value", "Detail", "Notes", "Column 1"
-- Include exactly 4 data rows with realistic, specific, and varied values
-- Every cell must contain meaningful content relevant to "${heading}"
-
-IMPORTANT: Return ONLY the raw JSON object — absolutely nothing else before or after it:
-{"headers":["Header1","Header2","Header3"],"rows":[["val","val","val"],["val","val","val"],["val","val","val"],["val","val","val"]]}
-JSON:`;
-    let raw = "";
-    const gen = streamOpenAI("", p, { max_tokens: 700, temperature: 0.25 });
+    const gen = streamOpenAI("", p, {
+      max_tokens: extrasNeeded.length * 350 + 100,
+      temperature: 0.3,
+      onStatus: setStreamLog,
+    });
     for await (const chunk of gen) { if (abortRef.current) return null; raw += chunk; }
 
-    // Multi-attempt extraction
     let obj = null;
-    const attempts = [
-      () => parseJsonRobust(raw),
-      () => parseJsonRobust(raw.slice(raw.search(/\{/))),
-      () => { const m = raw.match(/\{[\s\S]*"headers"[\s\S]*"rows"[\s\S]*\}/); if (m) return parseJsonRobust(m[0]); throw new Error(); },
-    ];
-    for (const attempt of attempts) {
-      try { obj = attempt(); if (obj && Array.isArray(obj.headers)) break; } catch (_) { }
+    try { obj = parseJsonRobust(raw); } catch (_) { }
+    if (!obj) {
+      try { obj = parseJsonRobust(raw.slice(raw.search(/\{/))); } catch (_) { }
+    }
+    if (!obj) return {};
+
+    const result = {};
+
+    if (extrasNeeded.includes("bullets") && Array.isArray(obj.bullets)) {
+      result.bullets = obj.bullets.map(String).filter(Boolean).slice(0, 6);
     }
 
-    if (obj && Array.isArray(obj.headers) && obj.headers.length >= 2) {
-      const headers = obj.headers.map(h => String(h).trim()).filter(Boolean).slice(0, 4);
+    if (extrasNeeded.includes("table") && obj.table?.headers) {
+      const headers = obj.table.headers.map(h => String(h).trim()).filter(Boolean).slice(0, 4);
       const n = headers.length;
       const headerSet = new Set(headers.map(h => h.toLowerCase()));
-      const rows = (Array.isArray(obj.rows) ? obj.rows : [])
+      const rows = (Array.isArray(obj.table.rows) ? obj.table.rows : [])
         .map(row => {
           const cells = (Array.isArray(row) ? row : []).map(c => String(c || "").trim());
           while (cells.length < n) cells.push("—");
@@ -2300,68 +2213,43 @@ JSON:`;
         .filter(row => {
           const nonEmpty = row.filter(c => c && c !== "—").length;
           if (nonEmpty === 0) return false;
-          // Only drop if ALL cells exactly match header names (not just partial match)
           const allMatchHeader = row.filter(c => c !== "—").every(c => headerSet.has(c.toLowerCase().trim()));
           return !allMatchHeader;
         });
-      if (rows.length > 0) return { headers, rows };
+      if (rows.length > 0) result.table = { headers, rows };
     }
 
-    // Fallback: generate contextual headers derived from the heading
-    const words = heading.replace(/[^a-zA-Z0-9 ]/g, "").split(" ").filter(w => w.length > 3);
-    const GENERIC = new Set(["aspect", "item", "value", "detail", "notes", "column", "factor", "point", "data", "info", "type", "name", "description"]);
-    const meaningful = words.filter(w => !GENERIC.has(w.toLowerCase()));
-    const h1 = meaningful[0] || words[0] || "Category";
-    const h2 = meaningful[1] || words[1] || heading.split(" ").slice(0, 2).join(" ") || "Details";
-    const h3 = meaningful[2] || "Impact";
-    return {
-      headers: [h1.charAt(0).toUpperCase() + h1.slice(1), h2.charAt(0).toUpperCase() + h2.slice(1), h3.charAt(0).toUpperCase() + h3.slice(1)],
-      rows: [
-        ["Primary element", "Key detail for " + h1, "High significance"],
-        ["Secondary element", "Supporting data for " + h2, "Medium significance"],
-        ["Tertiary element", "Additional context", "Varies by case"],
-        ["Supplementary", "Comparative measure", "Context dependent"],
-      ]
-    };
+    if (extrasNeeded.includes("columns") && Array.isArray(obj.columns) && obj.columns.length >= 2) {
+      const cols = obj.columns.slice(0, 2).map(String).filter(Boolean);
+      const w0 = cols[0].replace(/\*\*/g, "").trim().split(/\s+/).slice(0, 4).join(" ").toLowerCase();
+      const w1 = cols[1].replace(/\*\*/g, "").trim().split(/\s+/).slice(0, 4).join(" ").toLowerCase();
+      if (w0 !== w1) result.columns = cols;
+    }
+
+    return result;
   };
 
-  /* ── PHASE 2d: columns (two-column layout) ── */
-  const fillColumns = async (docTitle, heading) => {
+  /* ── PHASE 2e: batch h2 subsections in one call ── */
+  const fillH2Batch = async (docTitle, heading, subHeadings, previousSummary) => {
     const p =
-      `You are a professional ${docType} writer. Create a two-column side-by-side CONTRAST layout for a document section.
-
-Document title: "${docTitle}"
-Section: "${heading}"
-Document type: ${docType}
-
-REQUIREMENT: The two columns MUST represent genuinely contrasting or parallel concepts for "${heading}".
-Choose a clear contrast pair, e.g.: "Advantages" vs "Challenges", "Current State" vs "Future Vision", "Approach A" vs "Approach B", "Strengths" vs "Limitations".
-
-Each column MUST:
-1. Start with a bold label: **Column Label** on its own (e.g. **Advantages** or **Challenges**)
-2. Follow with 2–3 full sentences of substantive prose for that column's specific angle
-3. Be clearly distinct from the other column — not continuation of the same thought
-
-Return ONLY a valid JSON array of exactly 2 strings (no markdown fences, no extra text):
-["**Label A**: prose sentences here for column 1.","**Label B**: prose sentences here for column 2."]
+      `${docType} writer. Doc: "${docTitle}" | Parent section: "${heading}"
+Write one body paragraph per subsection below. ${previousSummary ? `Do NOT repeat: ${previousSummary}` : ""}
+${wordsPerPara}–${wordsPerPara + 40} words each. **bold** key terms (2–3/para). No filler, no "In this section…".
+Return ONE JSON object keyed by subsection title:
+${JSON.stringify(Object.fromEntries(subHeadings.map(s => [s, "paragraph text here"])))}
 JSON:`;
     let raw = "";
-    const gen = streamOpenAI("", p, { max_tokens: 500, temperature: 0.4 });
+    const gen = streamOpenAI("", p, {
+      max_tokens: Math.min(subHeadings.length * (wordsPerPara + 40) * 2 + 100, 1400),
+      temperature: 0.35,
+      onStatus: setStreamLog,
+    });
     for await (const chunk of gen) { if (abortRef.current) return null; raw += chunk; }
     try {
-      const arr = parseJsonRobust(raw);
-      if (Array.isArray(arr) && arr.length >= 2) {
-        const cols = arr.slice(0, 2).map(String).filter(Boolean);
-        // Guard: if both columns start with the same first 4 words, they're not genuinely parallel — reject
-        const words0 = cols[0].replace(/\*\*/g, "").trim().split(/\s+/).slice(0, 4).join(" ").toLowerCase();
-        const words1 = cols[1].replace(/\*\*/g, "").trim().split(/\s+/).slice(0, 4).join(" ").toLowerCase();
-        if (words0 === words1) return null;
-        return cols;
-      }
+      const obj = parseJsonRobust(raw);
+      if (obj && typeof obj === "object") return obj;
     } catch (_) { }
-    // Fallback: split on newline
-    const lines = raw.split("\n").map(l => l.replace(/^["',\[\]]+|["',\[\]]+$/g, "").trim()).filter(l => l.length > 20);
-    return lines.length >= 2 ? [lines[0], lines[1]] : null;
+    return {};
   };
 
   /* ── MAIN go() ── */
@@ -2409,60 +2297,63 @@ JSON:`;
 
         elements.push({ id: nid(), type: "h1", text: heading });
 
-        // Body paragraphs — pass previous summary for contextual memory
+        // Body paragraphs
         const paras = await fillBodySection(outline.title || "Document", heading, dynamicBodyPerSec, previousSummary, (len) => {
           setStreamLog(`Section ${i + 1}/${sections.length} — ${heading}: ${Math.round(len / 4)} tokens`);
         });
         if (abortRef.current) break;
         if (paras) {
           elements.push({ id: nid(), type: "paragraph", texts: paras });
-          // Update contextual memory: one-sentence summary of this section
-          previousSummary += (previousSummary ? " " : "") + `Section "${heading}" covered: ${paras[0].slice(0, 120).replace(/\n/g, " ")}...`;
-          // Keep summary concise — only last 2 sections worth
+          previousSummary += (previousSummary ? " " : "") + `Section "${heading}": ${paras[0].slice(0, 100).replace(/\n/g, " ")}...`;
           const summaryParts = previousSummary.split('Section "');
           if (summaryParts.length > 3) previousSummary = 'Section "' + summaryParts.slice(-2).join('Section "');
         }
 
-        // Extras: hr, bullets, table, columns, h2 subsections — in the order the outline specified
-        for (const extra of extras) {
+        // ── Batch 1: all h2 subsections in ONE call ──
+        const h2Extras = extras.filter(e => typeof e === "string" && e.startsWith("h2:"));
+        if (h2Extras.length > 0) {
+          const subHeadings = h2Extras.map(e => e.slice(3).trim() || `${heading} — Details`);
+          setStreamLog(`Section ${i + 1}/${sections.length} — ${heading}: writing ${subHeadings.length} subsections…`);
+          const h2Results = await fillH2Batch(outline.title || "Document", heading, subHeadings, previousSummary);
           if (abortRef.current) break;
-          if (extra === "hr") {
-            elements.push({ id: nid(), type: "hr" });
-          } else if (typeof extra === "string" && extra.startsWith("h2:")) {
-            const subHeading = extra.slice(3).trim() || `${heading} — Details`;
+          for (const subHeading of subHeadings) {
             elements.push({ id: nid(), type: "h2", text: subHeading });
-            // Fill a short body paragraph for this h2 subsection
-            const subParas = await fillBodySection(outline.title || "Document", `${subHeading} (subsection of ${heading})`, 1, previousSummary, (len) => {
-              setStreamLog(`Section ${i + 1}/${sections.length} — ${subHeading}: ${Math.round(len / 4)} tokens`);
-            });
-            if (abortRef.current) break;
-            if (subParas) {
-              elements.push({ id: nid(), type: "paragraph", texts: subParas });
-              previousSummary += (previousSummary ? " " : "") + `Subsection "${subHeading}" covered: ${subParas[0].slice(0, 80).replace(/\n/g, " ")}...`;
-            }
-          } else if (extra === "bullets") {
-            setStreamLog(`Section ${i + 1}/${sections.length} — ${heading}: writing bullets…`);
-            const items = await fillBullets(outline.title || "Document", heading);
-            if (abortRef.current) break;
-            if (items && items.length) elements.push({ id: nid(), type: "bullets", items });
-          } else if (extra === "table") {
-            setStreamLog(`Section ${i + 1}/${sections.length} — ${heading}: writing table…`);
-            const tbl = await fillTable(outline.title || "Document", heading);
-            if (abortRef.current) break;
-            if (tbl) elements.push({ id: nid(), type: "table", headers: tbl.headers, rows: tbl.rows });
-          } else if (extra === "columns") {
-            setStreamLog(`Section ${i + 1}/${sections.length} — ${heading}: writing columns…`);
-            const colData = await fillColumns(outline.title || "Document", heading);
-            if (abortRef.current) break;
-            if (colData && colData.length >= 2) {
-              elements.push({ id: nid(), type: "columns", cols: 2, texts: colData });
-            } else if (colData === null) {
-              // columns guard rejected non-parallel content — render as paragraph instead
-              const fallbackParas = await fillBodySection(outline.title || "Document", heading + " (additional context)", 1, previousSummary, () => { });
-              if (!abortRef.current && fallbackParas) elements.push({ id: nid(), type: "paragraph", texts: fallbackParas });
+            const txt = h2Results?.[subHeading];
+            if (txt) {
+              elements.push({ id: nid(), type: "paragraph", texts: [String(txt).trim()] });
+              previousSummary += ` Subsection "${subHeading}": ${String(txt).slice(0, 80)}...`;
             }
           }
         }
+
+        // ── Batch 2: bullets + table + columns in ONE call ──
+        const extrasNeeded = extras.filter(e => e === "bullets" || e === "table" || e === "columns");
+        const hasHr = extras.includes("hr");
+
+        if (extrasNeeded.length > 0) {
+          setStreamLog(`Section ${i + 1}/${sections.length} — ${heading}: writing ${extrasNeeded.join(", ")}…`);
+          const extrasResult = await fillExtras(outline.title || "Document", heading, extrasNeeded);
+          if (abortRef.current) break;
+
+          // Preserve outline ordering when inserting results
+          for (const extra of extras) {
+            if (extra === "bullets" && extrasResult?.bullets?.length) {
+              elements.push({ id: nid(), type: "bullets", items: extrasResult.bullets });
+            } else if (extra === "table" && extrasResult?.table) {
+              elements.push({ id: nid(), type: "table", headers: extrasResult.table.headers, rows: extrasResult.table.rows });
+            } else if (extra === "columns") {
+              if (extrasResult?.columns?.length >= 2) {
+                elements.push({ id: nid(), type: "columns", cols: 2, texts: extrasResult.columns });
+              } else {
+                // fallback: add as paragraph
+                const fallbackParas = await fillBodySection(outline.title || "Document", heading + " (additional context)", 1, previousSummary, () => { });
+                if (!abortRef.current && fallbackParas) elements.push({ id: nid(), type: "paragraph", texts: fallbackParas });
+              }
+            }
+          }
+        }
+
+        if (hasHr) elements.push({ id: nid(), type: "hr" });
       }
 
       if (abortRef.current) { setLoading(false); setLoadingPhase(null); setPhase("idle"); return; }
@@ -2489,7 +2380,7 @@ JSON:`;
           What do you want to create?
         </h2>
         <p className="text-slate-500 text-base md:text-lg font-medium">
-          One prompt → full .docx, streamed in real time. No cloud, no API key.
+          One prompt → full .docx, streamed in real time.
         </p>
       </div>
 
@@ -2497,7 +2388,7 @@ JSON:`;
       <div className="w-full mb-6 flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-5 py-4">
         <span className="text-amber-500 text-lg shrink-0 mt-0.5">💡</span>
         <div className="text-[13px] text-amber-800 font-medium leading-relaxed">
-          <strong>Tip:</strong> Be specific in your prompt. Mention the audience, purpose, and tone (e.g. <em>"a formal Q3 sales report for investors, 4 pages"</em>). The more context you give, the better the output.
+          <strong>Tip:</strong> Be specific in your prompt. Mention the audience, purpose, and tone (e.g. <em>"a formal Q3 sales report for investors"</em>). The more context you give, the better the output.
         </div>
       </div>
 
@@ -2742,15 +2633,22 @@ function Step3Result({ result, onStartOver, onBack }) {
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
 
   const runFileDownload = () => {
-    const name = (title.slice(0, 40).replace(/[^a-z0-9]/gi, "_") || "document") + ".docx";
-    const blob = new Blob([uint8], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = name; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    try {
+      if (!uint8 || !uint8.length) throw new Error("No file data");
+      const name = (title.slice(0, 40).replace(/[^a-z0-9]/gi, "_") || "document") + ".docx";
+      const blob = new Blob([uint8], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch (err) {
+      console.error("Download failed:", err);
+      alert("Download failed: " + (err?.message || "unknown error"));
+    }
   };
 
   const confirmDownloadWithFeedback = async ({ rating, comment }) => {
-    await trackDownloadWithFeedback({ rating, comment });
+    try { await trackDownloadWithFeedback({ rating, comment }); } catch (_) { /* never block download on tracking errors */ }
     runFileDownload();
     setDownloadModalOpen(false);
   };
