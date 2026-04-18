@@ -2380,7 +2380,7 @@ JSON:`;
           What do you want to create?
         </h2>
         <p className="text-slate-500 text-base md:text-lg font-medium">
-          One prompt → full .docx, streamed in real time. No cloud, no API key.
+          One prompt → full .docx, streamed in real time.
         </p>
       </div>
 
@@ -2388,7 +2388,7 @@ JSON:`;
       <div className="w-full mb-6 flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-5 py-4">
         <span className="text-amber-500 text-lg shrink-0 mt-0.5">💡</span>
         <div className="text-[13px] text-amber-800 font-medium leading-relaxed">
-          <strong>Tip:</strong> Be specific in your prompt. Mention the audience, purpose, and tone (e.g. <em>"a formal Q3 sales report for investors, 4 pages"</em>). The more context you give, the better the output.
+          <strong>Tip:</strong> Be specific in your prompt. Mention the audience, purpose, and tone (e.g. <em>"a formal Q3 sales report for investors"</em>). The more context you give, the better the output.
         </div>
       </div>
 
