@@ -35,7 +35,7 @@
   
   <!-- How It Works Page -->
   <url>
-    <loc>https://docreplacer.com/how-it-works</loc>
+    <loc>https://docreplacer.online/how-it-works</loc>
     <lastmod>2026-04-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -43,7 +43,7 @@
 
   <!-- Blog Page -->
   <url>
-    <loc>https://docreplacer.com/blog</loc>
+    <loc>https://docreplacer.online/blog</loc>
     <lastmod>2026-04-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>

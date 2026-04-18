@@ -2406,7 +2406,13 @@ JSON:`;
           <div className="mt-4 flex items-start gap-2 px-1">
             <span className="text-slate-400 text-xs shrink-0 mt-0.5">⚠️</span>
             <p className="text-[11px] text-slate-500 leading-relaxed italic">
-              <strong>MVP Notice:</strong> As this is an early-release version, some document formatting, content alignment, and page accuracy may vary as we continue to refine the AI engine.
+              <strong>MVP Notice:</strong> As this is an early-release version, some document formatting, content alignment, and page accuracy may vary. <strong>AI may make mistakes</strong> — please check and verify all generated content.
+            </p>
+          </div>
+          <div className="mt-2 flex items-start gap-2 px-1">
+            <span className="text-slate-400 text-xs shrink-0 mt-0.5">🛡️</span>
+            <p className="text-[11px] text-slate-500 leading-relaxed italic">
+              <strong>Security Warning:</strong> Do not give sensitive information (e.g., passwords or personal details) in the prompt.
             </p>
           </div>
         </div>
