@@ -46,6 +46,11 @@ const AdminDashboard = () => {
     const envUser = import.meta.env.VITE_ADMIN_USER;
     const envPass = import.meta.env.VITE_ADMIN_PASS;
 
+    if (!envUser || !envPass) {
+      setError('Configuration Error: Admin credentials are not set in the environment variables.');
+      return;
+    }
+
     if (username === envUser && password === envPass) {
       setIsLoggedIn(true);
       setError('');
