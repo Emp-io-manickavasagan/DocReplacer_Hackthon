@@ -19,18 +19,18 @@ export default function UseCasePage() {
         <title>AI Business Proposal Generator | Free .docx Builder | DocReplacer</title>
         <meta name="description" content="Instantly generate professional, formatted business proposals in .docx format. 100% free, private, and runs entirely in your browser." />
         <meta name="keywords" content="AI business proposal generator, write business proposal AI, free docx proposal template, client-side document builder" />
-        <link rel="canonical" href="https://docreplacer.com/use-cases" />
+        <link rel="canonical" href="https://docreplacer.online/use-cases" />
         
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://docreplacer.com/use-cases" />
+        <meta property="og:url" content="https://docreplacer.online/use-cases" />
         <meta property="og:title" content="AI Business Proposal Generator | DocReplacer" />
         <meta property="og:description" content="Professional .docx business proposals generated in-browser with AI. Private and free." />
-        <meta property="og:image" content="https://docreplacer.com/Logo.ico" />
+        <meta property="og:image" content="https://docreplacer.online/Logo.ico" />
 
         {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:url" content="https://docreplacer.com/use-cases" />
+        <meta property="twitter:url" content="https://docreplacer.online/use-cases" />
         <meta property="twitter:title" content="AI Business Proposal Generator | DocReplacer" />
         <meta property="twitter:description" content="Professional .docx business proposals generated in-browser with AI. Private and free." />
       </Helmet>

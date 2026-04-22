@@ -37,12 +37,12 @@ export default function HowItWorksPage() {
         <title>How it Works | DocReplacer AI Document Generation Process</title>
         <meta name="description" content="Learn how DocReplacer uses AI to generate professional .docx files in 3 easy steps. Secure, private, and 100% browser-based document creation." />
         <meta name="keywords" content="AI document generation, how DocReplacer works, prompt to word, browser-based docx builder, private document AI" />
-        <link rel="canonical" href="https://docreplacer.com/how-it-works" />
+        <link rel="canonical" href="https://docreplacer.online/how-it-works" />
         
         {/* Social Meta Tags */}
         <meta property="og:title" content="How it Works | DocReplacer AI Process" />
         <meta property="og:description" content="3 steps to your perfect AI-generated document. Private, browser-based, and fast." />
-        <meta property="og:url" content="https://docreplacer.com/how-it-works" />
+        <meta property="og:url" content="https://docreplacer.online/how-it-works" />
         <meta name="twitter:card" content="summary_large_image" />
       </Helmet>
 

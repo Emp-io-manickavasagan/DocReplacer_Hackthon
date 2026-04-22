@@ -21,21 +21,21 @@ export default function LandingPage() {
         <title>DocReplacer | Free AI Word Document Generator & .docx Builder</title>
         <meta name="description" content="Generate professional Microsoft Word (.docx) files instantly from text prompts. A 100% free, private, client-side AI document creator with no login required." />
         <meta name="keywords" content="Free AI Word document generator, client-side docx creator, generate docx from prompt, private AI document writer, OpenXML builder, no login word doc" />
-        <link rel="canonical" href="https://docreplacer.com/" />
+        <link rel="canonical" href="https://docreplacer.online/" />
 
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://docreplacer.com/" />
+        <meta property="og:url" content="https://docreplacer.online/" />
         <meta property="og:title" content="DocReplacer | Private AI .docx Generator" />
         <meta property="og:description" content="Turn a simple prompt into a fully-formatted .docx Word file securely in your browser. No server, no tracking." />
-        <meta property="og:image" content="https://docreplacer.com/Logo.ico" />
+        <meta property="og:image" content="https://docreplacer.online/Logo.ico" />
 
         {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:url" content="https://docreplacer.com/" />
+        <meta property="twitter:url" content="https://docreplacer.online/" />
         <meta property="twitter:title" content="DocReplacer | Private AI .docx Generator" />
         <meta property="twitter:description" content="Turn a simple prompt into a fully-formatted .docx Word file securely in your browser. No server, no tracking." />
-        <meta property="twitter:image" content="https://docreplacer.com/Logo.ico" />
+        <meta property="twitter:image" content="https://docreplacer.online/Logo.ico" />
       </Helmet>
 
       {/* AEO: SoftwareApplication Schema */}
