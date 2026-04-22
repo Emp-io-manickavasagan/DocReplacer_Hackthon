@@ -7,6 +7,7 @@ import DocsPage from './pages/Docs'
 import UseCasePage from './pages/UseCase'
 import HowItWorksPage from './pages/HowItWorks'
 import BlogPage from './pages/Blog'
+import AdminDashboard from './pages/AdminDashboard'
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="/use-cases" element={<UseCasePage />} />
         <Route path="/how-it-works" element={<HowItWorksPage />} />
         <Route path="/blog" element={<BlogPage />} />
+        <Route path="/admin-portal-x9z2p4" element={<AdminDashboard />} />
       </Routes>
     </Router>
   )
