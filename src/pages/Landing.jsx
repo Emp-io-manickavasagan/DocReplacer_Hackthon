@@ -402,6 +402,8 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+      </section>
+
       {/* Submit AI Tools Badge */}
       <div className="relative z-10 flex justify-center pb-16">
         <a href="https://submitaitools.org" target="_blank" rel="noopener noreferrer">
