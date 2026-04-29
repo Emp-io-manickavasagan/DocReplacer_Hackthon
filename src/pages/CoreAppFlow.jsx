@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 import {
@@ -2749,6 +2750,16 @@ function LoadingOverlay({ phase }) {
 /* ════════════════════════════════════════════════
    ROOT — Doc Builder
 ════════════════════════════════════════════════ */
+=======
+import React, { useState, useEffect } from 'react';
+import { recordSessionVisit, trackPromptSubmitted, trackBuildDocx } from '../tracking.js';
+import { DEFAULT_DOC_STYLES } from '../utils/constants.js';
+import Step1Prompt from '../components/CoreAppFlow/Step1Prompt.jsx';
+import Step2Editor from '../components/CoreAppFlow/Step2Editor.jsx';
+import Step3Result from '../components/CoreAppFlow/Step3Result.jsx';
+import Stepper from '../components/CoreAppFlow/Stepper.jsx';
+import LoadingOverlay from '../components/CoreAppFlow/LoadingOverlay.jsx';
+>>>>>>> 9b5baa4 (Refactor CoreAppFlow and update components)
 export default function CoreAppFlow() {
   const [step, setStep] = useState(0);
   const [elements, setElements] = useState([]);
