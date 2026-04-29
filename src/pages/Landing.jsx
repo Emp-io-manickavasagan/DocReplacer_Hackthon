@@ -249,18 +249,21 @@ export default function LandingPage() {
           {/* External Platform Badges */}
           <div className="flex flex-wrap justify-center items-center gap-8 mb-20 fade-up-4">
             <a href="https://submitaitools.org" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
-              <img 
-                src="https://submitaitools.org/static_submitaitools/images/submitaitools.png" 
-                alt="Submit AI Tools" 
-                style={{ borderRadius: '10px', width: '200px', height: '60px' }} 
+              <img
+                src="https://submitaitools.org/static_submitaitools/images/submitaitools.png"
+                alt="Submit AI Tools"
+                style={{ borderRadius: '10px', width: '200px', height: '60px' }}
               />
             </a>
             <a href="https://fazier.com" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
-              <img 
-                src="https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=featured&theme=dark" 
-                width={250} 
-                alt="Fazier badge" 
+              <img
+                src="https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=featured&theme=dark"
+                width={250}
+                alt="Fazier badge"
               />
+            </a>
+            <a href="https://aihuntlist.com/tool/docreplacer" target="_blank" rel="noopener noreferrer">
+              <img src="https://aihuntlist.com/badge-dark.svg" alt="Featured on aihuntlist.com" style={{ height: '54px', width: 'auto' }} />
             </a>
           </div>
         </div>
