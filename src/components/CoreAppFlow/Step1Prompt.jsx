@@ -227,7 +227,7 @@ JSON:`;
   /* ── MAIN go() ── */
   const go = async () => {
     if (!prompt.trim()) { setError("Please describe your document."); return; }
-    if (prompt.trim().length < 10) { setError("Please provide a more descriptive prompt (at least 10 characters)."); return; }
+    if (prompt.trim().length < 10) { setError("Please provide a more descriptive prompt (at least 20 characters)."); return; }
     if (prompt.length > 2000) { setError("Prompt is too long. Please keep it under 2000 characters."); return; }
     setError(""); setLoading(true); setTokens(0); setPhase("structure");
     setStreamLog("Connecting to AI…");
