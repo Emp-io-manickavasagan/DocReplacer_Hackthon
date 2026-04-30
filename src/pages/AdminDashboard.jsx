@@ -6,7 +6,9 @@ import {
   getDoc, 
   query, 
   orderBy, 
-  limit 
+  limit,
+  writeBatch,
+  setDoc
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Helmet } from 'react-helmet-async';
@@ -20,7 +22,9 @@ import {
   LogOut, 
   TrendingUp,
   ChevronRight,
-  Star
+  Star,
+  Trash2,
+  Zap
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -35,6 +39,7 @@ const AdminDashboard = () => {
     uniqueVisitors: 0,
     totalVisits: 0,
     returningUsers: 0,
+    totalPrompts: 0,
     totalGenerations: 0,
     totalDownloads: 0,
   });
@@ -73,6 +78,7 @@ const AdminDashboard = () => {
       const usersSnap = await getDocs(collection(db, 'users'));
       let tVisits = 0;
       let rUsers = 0;
+      let tPrompts = 0;
       let tGens = 0;
       let tDowns = 0;
 
@@ -80,6 +86,7 @@ const AdminDashboard = () => {
         const data = doc.data();
         tVisits += (data.visitCount || 0);
         if ((data.visitCount || 0) > 1) rUsers++;
+        tPrompts += (data.promptCount || 0);
         tGens += (data.buildDocxCount || 0);
         tDowns += (data.downloadCount || 0);
       });
@@ -88,6 +95,7 @@ const AdminDashboard = () => {
         uniqueVisitors: uniqueNum,
         totalVisits: tVisits,
         returningUsers: rUsers,
+        totalPrompts: tPrompts,
         totalGenerations: tGens,
         totalDownloads: tDowns,
       });
@@ -108,6 +116,37 @@ const AdminDashboard = () => {
     } catch (err) {
       console.error("Error fetching admin stats:", err);
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearData = async () => {
+    if (!window.confirm("Are you SURE you want to clear ALL analytics data? This will reset all stats to 0. This cannot be undone.")) return;
+    
+    setLoading(true);
+    try {
+      const batchDelete = async (colName) => {
+        const snap = await getDocs(collection(db, colName));
+        const chunks = [];
+        for (let i = 0; i < snap.docs.length; i += 500) {
+          chunks.push(snap.docs.slice(i, i + 500));
+        }
+        for (const chunk of chunks) {
+          const batch = writeBatch(db);
+          chunk.forEach(d => batch.delete(d.ref));
+          await batch.commit();
+        }
+      };
+
+      await batchDelete('users');
+      await batchDelete('downloadFeedback');
+      await setDoc(doc(db, 'stats', 'aggregates'), { uniqueVisitors: 0 });
+
+      await fetchData();
+      alert("All data cleared successfully.");
+    } catch (err) {
+      console.error("Error clearing data:", err);
+      alert("Error clearing data. Check console.");
       setLoading(false);
     }
   };
@@ -210,6 +249,12 @@ const AdminDashboard = () => {
             Refresh Data
           </button>
           <button 
+            onClick={handleClearData}
+            className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-2 rounded-lg hover:bg-red-500/20 transition-all text-sm font-medium"
+          >
+            <Trash2 size={16} /> Clear Data
+          </button>
+          <button 
             onClick={handleLogout}
             className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-lg hover:bg-white/10 transition-all text-sm font-medium"
           >
@@ -227,7 +272,7 @@ const AdminDashboard = () => {
         ) : (
           <>
             {/* Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
               <StatCard 
                 title="Unique Visitors" 
                 value={stats.uniqueVisitors} 
@@ -240,6 +285,12 @@ const AdminDashboard = () => {
                 icon={<MousePointer2 className="text-emerald-400" />} 
                 color="emerald"
                 subtitle={`${stats.returningUsers} returning users`}
+              />
+              <StatCard 
+                title="Prompts Started" 
+                value={stats.totalPrompts} 
+                icon={<Zap className="text-yellow-400" />} 
+                color="yellow"
               />
               <StatCard 
                 title="Documents Generated" 
@@ -338,6 +389,7 @@ const StatCard = ({ title, value, icon, color, subtitle }) => {
   const colorMap = {
     blue: 'border-blue-500/20 bg-blue-500/5',
     emerald: 'border-emerald-500/20 bg-emerald-500/5',
+    yellow: 'border-yellow-500/20 bg-yellow-500/5',
     orange: 'border-orange-500/20 bg-orange-500/5',
     purple: 'border-purple-500/20 bg-purple-500/5',
   };
