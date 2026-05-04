@@ -348,42 +348,42 @@ JSON:`;
     <div className="w-full max-w-3xl mx-auto flex flex-col items-center">
       {/* Header */}
       <div className="text-center mb-10">
-        <h2 className="db-serif text-4xl md:text-[52px] text-slate-900 tracking-tight leading-tight mb-4 text-center">
+        <h2 className="db-serif text-4xl md:text-[52px] text-white tracking-tight leading-tight mb-4 text-center">
           What do you want to create?
         </h2>
-        <p className="text-slate-500 text-base md:text-lg font-medium">
+        <p className="text-white/50 text-base md:text-lg font-medium">
           One prompt → full .docx, streamed in real time.
         </p>
       </div>
 
       {/* Guiding tip */}
-      <div className="w-full mb-6 flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-5 py-4">
+      <div className="w-full mb-6 flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl px-5 py-4">
         <span className="text-amber-500 text-lg shrink-0 mt-0.5">💡</span>
-        <div className="text-[13px] text-amber-800 font-medium leading-relaxed">
+        <div className="text-[13px] text-amber-200/80 font-medium leading-relaxed">
           <strong>Tip:</strong> Be specific in your prompt. Mention the audience, purpose, and tone (e.g. <em>"a formal Q3 sales report for investors"</em>). The more context you give, the better the output.
         </div>
       </div>
 
-      <div className="w-full space-y-6 bg-white/80 backdrop-blur-sm p-8 md:p-10 rounded-[28px] border border-slate-200/80 shadow-[0_8px_32px_rgba(0,0,0,0.07)]">
+      <div className="w-full space-y-6 bg-white/[0.02] backdrop-blur-sm p-8 md:p-10 rounded-[28px] border border-white/[0.06] shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
         {/* Prompt input */}
         <div className="w-full">
-          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Document Prompt</label>
+          <label className="block text-[11px] font-bold text-white/40 uppercase tracking-widest mb-3 ml-1">Document Prompt</label>
           <textarea rows={4} value={prompt} onChange={e => setPrompt(e.target.value)} disabled={loading}
             placeholder='e.g. "Technical report on Python vs JavaScript for web development — for a software engineering audience"'
-            className="w-full px-5 py-4 bg-slate-50/80 border-2 border-slate-100 rounded-2xl text-slate-800 focus:outline-none focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100/50 transition-all resize-y text-[15px] leading-relaxed placeholder:text-slate-400 font-medium" />
+            className="w-full px-5 py-4 bg-white/[0.03] border-2 border-white/[0.08] rounded-2xl text-white focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 transition-all resize-y text-[15px] leading-relaxed placeholder:text-white/30 font-medium" />
           <div className="flex items-center justify-between mt-2 px-1">
-            <p className="text-[11px] text-slate-400 font-medium">Press Generate below when you're ready</p>
-            <p className={`text-[11px] font-semibold ${prompt.length > 20 ? 'text-indigo-500' : 'text-slate-300'}`}>{prompt.length} chars</p>
+            <p className="text-[11px] text-white/40 font-medium">Press Generate below when you're ready</p>
+            <p className={`text-[11px] font-semibold ${prompt.length > 20 ? 'text-indigo-400' : 'text-white/30'}`}>{prompt.length} chars</p>
           </div>
           <div className="mt-4 flex items-start gap-2 px-1">
             <span className="text-slate-400 text-xs shrink-0 mt-0.5">⚠️</span>
-            <p className="text-[11px] text-slate-500 leading-relaxed italic">
+            <p className="text-[11px] text-white/50 leading-relaxed italic">
               <strong>MVP Notice:</strong> As this is an early-release version, some document formatting, content alignment, and page accuracy may vary. <strong>AI may make mistakes</strong> — please check and verify all generated content.
             </p>
           </div>
           <div className="mt-2 flex items-start gap-2 px-1">
             <span className="text-slate-400 text-xs shrink-0 mt-0.5">🛡️</span>
-            <p className="text-[11px] text-slate-500 leading-relaxed italic">
+            <p className="text-[11px] text-white/50 leading-relaxed italic">
               <strong>Security Warning:</strong> Do not give sensitive information (e.g., passwords or personal details) in the prompt.
             </p>
           </div>
@@ -391,18 +391,18 @@ JSON:`;
 
         <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Doc type */}
-          <div className="bg-slate-50/60 p-5 rounded-2xl border border-slate-100">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-1">Document Type</div>
-            <p className="text-[11px] text-slate-400 mb-4 font-medium">Affects writing tone and structure</p>
+          <div className="bg-white/[0.02] p-5 rounded-2xl border border-white/[0.06]">
+            <div className="text-[10px] font-bold text-white/40 uppercase tracking-[0.15em] mb-1">Document Type</div>
+            <p className="text-[11px] text-white/40 mb-4 font-medium">Affects writing tone and structure</p>
             <div className="flex flex-col gap-1.5">
               {DOC_TYPES.map(dt => {
                 const a = docType === dt.value;
                 return (
                   <button key={dt.value} onClick={() => setDocType(dt.value)} disabled={loading}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-[13px] font-semibold transition-all ${a ? 'bg-white border-indigo-500 text-indigo-700 shadow-sm ring-1 ring-indigo-400/30' : 'bg-transparent border-transparent text-slate-500 hover:bg-white hover:border-slate-200 hover:text-slate-700'}`}>
-                    <span className={`text-base ${a ? 'text-indigo-600' : 'text-slate-400'}`}>{dt.icon}</span>
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-[13px] font-semibold transition-all ${a ? 'bg-indigo-500/10 border-indigo-500 text-indigo-300 shadow-sm ring-1 ring-indigo-500/30' : 'bg-transparent border-transparent text-white/50 hover:bg-white/[0.04] hover:border-white/[0.06] hover:text-white'}`}>
+                    <span className={`text-base ${a ? 'text-indigo-400' : 'text-white/40'}`}>{dt.icon}</span>
                     {dt.label}
-                    {a && <span className="ml-auto text-indigo-600 font-black text-xs">✓</span>}
+                    {a && <span className="ml-auto text-indigo-400 font-black text-xs">✓</span>}
                   </button>
                 );
               })}
@@ -410,44 +410,44 @@ JSON:`;
           </div>
 
           {/* Length */}
-          <div className="bg-slate-50/60 p-5 rounded-2xl border border-slate-100 flex flex-col">
+          <div className="bg-white/[0.02] p-5 rounded-2xl border border-white/[0.06] flex flex-col">
             <div className="flex items-center justify-between mb-1">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">Page Length</div>
-              <span className="text-indigo-700 font-black text-[13px] px-2.5 py-0.5 bg-indigo-50 border border-indigo-100 rounded-full">{pages} page{pages > 1 ? "s" : ""}</span>
+              <div className="text-[10px] font-bold text-white/40 uppercase tracking-[0.15em]">Page Length</div>
+              <span className="text-indigo-300 font-black text-[13px] px-2.5 py-0.5 bg-indigo-500/20 border border-indigo-500/30 rounded-full">{pages} page{pages > 1 ? "s" : ""}</span>
             </div>
-            <p className="text-[11px] text-slate-400 mb-4 font-medium">More pages = more sections & detail</p>
+            <p className="text-[11px] text-white/40 mb-4 font-medium">More pages = more sections & detail</p>
             <div className="grid grid-cols-5 gap-2 mb-5">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => {
                 const a = pages === n;
                 return (
                   <button key={n} onClick={() => setPages(n)} disabled={loading}
-                    className={`h-10 rounded-xl db-mono text-sm font-bold transition-all ${a ? 'text-white shadow-md scale-105' : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'}`}
+                    className={`h-10 rounded-xl db-mono text-sm font-bold transition-all ${a ? 'text-white shadow-lg shadow-indigo-500/20 scale-105' : 'bg-white/[0.03] border border-white/[0.06] text-white/60 hover:border-white/[0.1] hover:text-white'}`}
                     style={a ? { background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' } : {}}>
                     {n}
                   </button>
                 );
               })}
             </div>
-            <div className="mt-auto bg-white rounded-xl p-4 border border-slate-200">
-              <div className="text-[13px] font-bold text-slate-900 mb-1">{pageLabel}</div>
-              <div className="text-[11px] text-slate-400 font-semibold">~{pages * 400} words · AI-chosen layout</div>
+            <div className="mt-auto bg-white/[0.03] rounded-xl p-4 border border-white/[0.06]">
+              <div className="text-[13px] font-bold text-white mb-1">{pageLabel}</div>
+              <div className="text-[11px] text-white/40 font-semibold">~{pages * 400} words · AI-chosen layout</div>
             </div>
           </div>
         </div>
       </div>
 
       {loading && (
-        <div className="w-full mt-8 flex flex-col items-center justify-center p-8 bg-white/80 backdrop-blur-sm rounded-2xl border border-indigo-100 shadow-sm text-center">
-          <div className="w-9 h-9 rounded-full border-[3px] border-indigo-100 border-t-indigo-600 animate-spin mb-4" />
-          <div className="text-sm font-bold text-slate-900">{phase === "done" ? "Completing…" : "Generating Document…"}</div>
-          <div className="text-[11px] text-indigo-600 font-medium mt-1 db-mono truncate max-w-md">{streamLog || "Initializing generation…"}</div>
-          <div className="mt-3 text-[11px] text-slate-400 font-medium">You can cancel at any time below</div>
+        <div className="w-full mt-8 flex flex-col items-center justify-center p-8 bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-indigo-500/20 shadow-lg text-center">
+          <div className="w-9 h-9 rounded-full border-[3px] border-indigo-500/20 border-t-indigo-400 animate-spin mb-4" />
+          <div className="text-sm font-bold text-white">{phase === "done" ? "Completing…" : "Generating Document…"}</div>
+          <div className="text-[11px] text-indigo-400 font-medium mt-1 db-mono truncate max-w-md">{streamLog || "Initializing generation…"}</div>
+          <div className="mt-3 text-[11px] text-white/40 font-medium">You can cancel at any time below</div>
         </div>
       )}
 
       {error && (
-        <div className="w-full bg-red-50 border border-red-200 rounded-2xl p-5 text-red-700 text-[13px] mt-8 font-medium flex items-center gap-3">
-          <div className="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold shrink-0">!</div>
+        <div className="w-full bg-red-500/10 border border-red-500/20 rounded-2xl p-5 text-red-400 text-[13px] mt-8 font-medium flex items-center gap-3">
+          <div className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center font-bold shrink-0">!</div>
           <p>{error}</p>
         </div>
       )}
@@ -455,7 +455,7 @@ JSON:`;
       <div className="w-full flex flex-col sm:flex-row items-center gap-3 mt-8 mb-6">
         <button onClick={go} disabled={loading || !prompt.trim()}
           className={`w-full py-4 px-8 rounded-full font-bold text-[15px] flex items-center justify-center gap-3 transition-all ${loading || !prompt.trim()
-            ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+            ? 'bg-white/[0.04] text-white/30 cursor-not-allowed'
             : 'text-white shadow-[0_8px_24px_rgba(99,102,241,0.35)] hover:shadow-[0_8px_32px_rgba(99,102,241,0.5)] hover:scale-[1.01]'
             }`}
           style={!(loading || !prompt.trim()) ? { background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' } : {}}>
@@ -464,7 +464,7 @@ JSON:`;
             : <>✦ Generate Document</>}
         </button>
         {loading && (
-          <button onClick={cancel} className="py-4 px-6 w-full sm:w-auto bg-white border border-red-200 text-red-600 rounded-full font-bold text-[13px] hover:bg-red-50 transition-colors uppercase tracking-widest whitespace-nowrap">Cancel</button>
+          <button onClick={cancel} className="py-4 px-6 w-full sm:w-auto bg-white/[0.04] border border-red-500/30 text-red-400 rounded-full font-bold text-[13px] hover:bg-red-500/10 transition-colors uppercase tracking-widest whitespace-nowrap">Cancel</button>
         )}
       </div>
     </div>

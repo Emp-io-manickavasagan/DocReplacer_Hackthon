@@ -19,7 +19,7 @@ function TemplateBlock({ el, idx, total, onUpdate, onUpdateBatch, onRemove, onMo
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
 
-  const inpClass = "w-full border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 placeholder:text-slate-400";
+  const inpClass = "w-full border border-white/[0.08] bg-white/[0.02] text-white rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 placeholder:text-white/30";
   const badgeClasses = {
     title: "bg-indigo-600 text-white", h1: "bg-slate-800 text-white",
     hr: "bg-slate-200 text-slate-500", default: "bg-slate-100 text-slate-600"
@@ -209,9 +209,9 @@ JSON:`;
   };
 
   return (
-    <div className="mb-5 overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+    <div className="mb-5 overflow-hidden bg-white/[0.03] border border-white/[0.06] rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-500/30 transition-shadow">
       {/* ── Header row ── */}
-      <div className={`flex items-center gap-3 px-5 py-3.5 ${isTitle ? 'bg-indigo-50/60' : 'bg-slate-50/80'} ${!isHr ? 'border-b border-slate-100' : ''}`}>
+      <div className={`flex items-center gap-3 px-5 py-3.5 ${isTitle ? 'bg-indigo-500/10' : 'bg-white/[0.02]'} ${!isHr ? 'border-b border-white/[0.06]' : ''}`}>
         <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider shrink-0 font-mono ${getBadgeStyle(el.type)}`}>
           {TYPE_LABEL[el.type] || el.type}
         </span>
@@ -219,11 +219,11 @@ JSON:`;
         {(isTitle || isHeading || isBody) && (
           <input value={el.text || ""} onChange={e => onUpdate("text", e.target.value)}
             placeholder={isBody ? "Body topic hint…" : "Heading text…"}
-            className={`flex-1 bg-transparent outline-none ${isTitle ? 'text-lg font-bold text-slate-900 placeholder:text-indigo-300' : isHeading ? 'text-base font-bold text-slate-900' : 'text-sm font-semibold text-slate-700'} w-0`} />
+            className={`flex-1 bg-transparent outline-none ${isTitle ? 'text-lg font-bold text-white placeholder:text-indigo-300' : isHeading ? 'text-base font-bold text-white' : 'text-sm font-semibold text-white/80 placeholder:text-white/30'} w-0`} />
         )}
 
         {(isBullets || isTable || isColumns) && (
-          <span className="flex-1 text-xs italic text-slate-500 font-medium">
+          <span className="flex-1 text-xs italic text-white/50 font-medium">
             {isBullets ? `${(el.items || []).length} points` : isTable ? `${(el.headers || []).length} cols · ${(el.rows || []).length} rows` : `${el.cols || 2}-column`}
           </span>
         )}
@@ -231,20 +231,20 @@ JSON:`;
         <div className="flex gap-1.5 ml-auto shrink-0">
           {!isHr && (
             <button onClick={() => { setAiOpen(o => !o); setAiError(""); }} title="Edit with AI"
-              className={`px-2.5 h-7 rounded-md text-xs font-bold transition-colors shadow-sm ${aiOpen ? 'bg-indigo-600 text-white' : isTitle ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}>
+              className={`px-2.5 h-7 rounded-md text-xs font-bold transition-colors shadow-sm ${aiOpen ? 'bg-indigo-500 text-white' : isTitle ? 'bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30' : 'bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20'}`}>
               ✦ AI
             </button>
           )}
-          <button onClick={onMoveUp} disabled={idx === 0} className="w-7 h-7 flex items-center justify-center border border-slate-200 rounded-md bg-white text-slate-600 hover:text-slate-900 disabled:opacity-30 disabled:hover:text-slate-600 shadow-sm transition-opacity">↑</button>
-          <button onClick={onMoveDown} disabled={idx === total - 1} className="w-7 h-7 flex items-center justify-center border border-slate-200 rounded-md bg-white text-slate-600 hover:text-slate-900 disabled:opacity-30 disabled:hover:text-slate-600 shadow-sm transition-opacity">↓</button>
-          {!isTitle && <button onClick={onRemove} className="w-7 h-7 flex items-center justify-center border border-red-200 rounded-md bg-red-50 text-red-600 hover:bg-red-100 transition-colors shadow-sm font-bold text-xs">✕</button>}
+          <button onClick={onMoveUp} disabled={idx === 0} className="w-7 h-7 flex items-center justify-center border border-white/[0.06] rounded-md bg-white/[0.04] text-white/50 hover:text-white disabled:opacity-30 disabled:hover:text-white/50 shadow-sm transition-opacity">↑</button>
+          <button onClick={onMoveDown} disabled={idx === total - 1} className="w-7 h-7 flex items-center justify-center border border-white/[0.06] rounded-md bg-white/[0.04] text-white/50 hover:text-white disabled:opacity-30 disabled:hover:text-white/50 shadow-sm transition-opacity">↓</button>
+          {!isTitle && <button onClick={onRemove} className="w-7 h-7 flex items-center justify-center border border-red-500/30 rounded-md bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors shadow-sm font-bold text-xs">✕</button>}
         </div>
       </div>
 
       {/* ── AI Edit Panel ── */}
       {aiOpen && (
-        <div className="p-4 bg-indigo-50/70 border-b border-indigo-100 transition-all">
-          <div className="text-xs font-bold text-indigo-800 mb-2.5">✦ Edit with AI — describe the change</div>
+        <div className="p-4 bg-indigo-500/10 border-b border-indigo-500/20 transition-all">
+          <div className="text-xs font-bold text-indigo-300 mb-2.5">✦ Edit with AI — describe the change</div>
           <div className="flex gap-2">
             <input
               value={aiPrompt}
@@ -252,14 +252,14 @@ JSON:`;
               onKeyDown={e => e.key === "Enter" && !e.shiftKey && runAiEdit()}
               placeholder="e.g. Make it more formal, add 2 more rows, shorten to 3 bullets…"
               disabled={aiLoading}
-              className={`flex-1 px-3 py-2 text-sm font-medium ${inpClass} ${aiLoading ? 'bg-slate-100 text-slate-500' : 'bg-white'}`}
+              className={`flex-1 px-3 py-2 text-sm font-medium ${inpClass} ${aiLoading ? 'bg-white/[0.02] text-white/30' : 'bg-white/[0.03] text-white'}`}
             />
             <button onClick={runAiEdit} disabled={aiLoading}
-              className={`px-5 py-2 rounded-lg text-sm font-bold text-white shadow-sm transition-colors ${aiLoading ? 'bg-indigo-300 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
+              className={`px-5 py-2 rounded-lg text-sm font-bold text-white shadow-sm transition-colors ${aiLoading ? 'bg-indigo-500/50 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500'}`}>
               {aiLoading ? "⟳ …" : "Apply"}
             </button>
             <button onClick={() => { setAiOpen(false); setAiPrompt(""); setAiError(""); }}
-              className="px-4 py-2 bg-white text-slate-600 border border-slate-200 rounded-lg text-sm font-semibold hover:border-slate-300 hover:bg-slate-50 transition-colors shadow-sm">
+              className="px-4 py-2 bg-white/[0.04] text-white/70 border border-white/[0.1] rounded-lg text-sm font-semibold hover:border-white/[0.15] hover:bg-white/[0.08] hover:text-white transition-colors shadow-sm">
               Cancel
             </button>
           </div>
@@ -272,12 +272,12 @@ JSON:`;
         <div className="p-4">
           {(el.items || []).map((item, i) => (
             <div key={i} className="flex gap-2.5 mb-2.5 items-center">
-              <span className="text-slate-400 shrink-0 text-xl leading-none mb-1">•</span>
+              <span className="text-white/40 shrink-0 text-xl leading-none mb-1">•</span>
               <input value={item} onChange={e => { const items = [...el.items]; items[i] = e.target.value; onUpdate("items", items); }} className={`flex-1 px-3 py-2 text-sm ${inpClass}`} />
               <button onClick={() => { const items = [...el.items]; items.splice(i, 1); onUpdate("items", items); }} className="text-red-400 hover:text-red-600 shrink-0 text-lg mx-1 flex items-center justify-center p-1 rounded transition-colors">&times;</button>
             </div>
           ))}
-          <button onClick={() => onUpdate("items", [...(el.items || []), "New point"])} className="text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors pt-2 pb-1 ml-6">+ Add point</button>
+          <button onClick={() => onUpdate("items", [...(el.items || []), "New point"])} className="text-sm font-bold text-indigo-400 hover:text-indigo-300 transition-colors pt-2 pb-1 ml-6">+ Add point</button>
         </div>
       )}
       {isBody && Array.isArray(el.texts) && el.texts.length > 0 && (
@@ -294,7 +294,7 @@ JSON:`;
           <div className="flex gap-1.5 mb-2">
             {(el.headers || []).map((h, ci) => (
               <input key={ci} value={h} onChange={e => { const hs = [...el.headers]; hs[ci] = e.target.value; onUpdate("headers", hs); }}
-                className={`flex-1 px-2.5 py-2 text-xs font-bold bg-indigo-50/70 border border-indigo-100 rounded-md focus:outline-none focus:border-indigo-300 text-slate-700`} />
+                className={`flex-1 px-2.5 py-2 text-xs font-bold bg-indigo-500/20 border border-indigo-500/30 rounded-md focus:outline-none focus:border-indigo-500 text-indigo-100 placeholder:text-indigo-300/50`} />
             ))}
           </div>
           {/* Row inputs */}
@@ -311,14 +311,14 @@ JSON:`;
             </div>
           ))}
           <button onClick={() => onUpdate("rows", [...(el.rows || []), Array((el.headers || []).length).fill("")])}
-            className="text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors mt-3 pb-1.5">+ Add row</button>
+            className="text-sm font-bold text-indigo-400 hover:text-indigo-300 transition-colors mt-3 pb-1.5">+ Add row</button>
         </div>
       )}
       {isColumns && (
         <div className="p-4 space-y-4">
           {Array(el.cols || 2).fill(null).map((_, i) => (
             <div key={i}>
-              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-1">Column {i + 1}</div>
+              <div className="text-xs font-bold text-white/40 uppercase tracking-wider mb-1.5 ml-1">Column {i + 1}</div>
               <textarea value={(el.texts || [])[i] || ""} rows={2}
                 onChange={e => { const t = [...(el.texts || [])]; t[i] = e.target.value; onUpdate("texts", t); }}
                 className={`w-full px-3 py-2.5 text-sm resize-y leading-relaxed ${inpClass}`} />

@@ -16,9 +16,8 @@ const STYLE_TABS = [
 
 const TYPE_ACCENT_COL = { title: C.blue900, h1: C.blue700, h2: C.blue500, paragraph: C.gray600, body: C.gray600, table: C.teal };
 
-/* small reusable field-label */
 const FL = ({ children }) => (
-  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">{children}</div>
+  <div className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1.5">{children}</div>
 );
 
 /* color row: swatch + hex input */
@@ -27,9 +26,9 @@ const ColorRow = ({ label, value, onChange }) => (
     <FL>{label}</FL>
     <div className="flex gap-2 items-center">
       <input type="color" value={value || "#000000"} onChange={e => onChange(e.target.value)}
-        className="w-9 h-9 border border-slate-200 rounded-lg cursor-pointer p-0.5 shrink-0 bg-white" />
+        className="w-9 h-9 border border-white/[0.08] rounded-lg cursor-pointer p-0.5 shrink-0 bg-transparent" />
       <input value={value || ""} onChange={e => onChange(e.target.value)} placeholder="#000000"
-        className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono text-slate-700 bg-white outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+        className="flex-1 px-3 py-2 border border-white/[0.08] rounded-lg text-xs font-mono text-white bg-transparent outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" />
     </div>
   </div>
 );
@@ -42,7 +41,7 @@ function StyleEditor({ docStyles, setDocStyles }) {
   const reset = (type) => setDocStyles(p => ({ ...p, [type]: { ...DEFAULT_DOC_STYLES[type] } }));
 
   const s = docStyles[tab] || {};
-  const iStClass = "w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-900 font-medium focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100";
+  const iStClass = "w-full px-3 py-2 text-sm border border-white/[0.08] rounded-lg bg-[#0a0a0f] text-white font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20";
 
   /* live preview text */
   const previewText = tab === "title" ? "Document Title — Preview" : tab === "h1" ? "1. Major Section Heading" : tab === "h2" ? "1.1 Sub-section Heading" : tab === "table" ? null : "Body paragraph text appears here. Font, size, colour and spacing all apply.";
@@ -73,28 +72,28 @@ function StyleEditor({ docStyles, setDocStyles }) {
   };
 
   return (
-    <div className="overflow-hidden bg-white rounded-2xl">
+    <div className="overflow-hidden bg-white/[0.02] border border-white/[0.06] rounded-2xl shadow-sm">
       {/* ── Toggle header ── */}
       <button onClick={() => setOpen(o => !o)}
-        className={`w-full flex items-center justify-between px-4 py-3.5 border-none cursor-pointer text-left transition-colors outline-none focus:ring-0 ${open ? 'bg-slate-900' : 'bg-slate-50 hover:bg-slate-100'
+        className={`w-full flex items-center justify-between px-4 py-3.5 border-none cursor-pointer text-left transition-colors outline-none focus:ring-0 ${open ? 'bg-white/[0.06]' : 'bg-white/[0.02] hover:bg-white/[0.04]'
           }`}>
         <div className="flex items-center gap-2.5 min-w-0">
           <span className={`text-base shrink-0 ${open ? 'text-indigo-400' : 'text-indigo-600'}`}>⚙️</span>
           <div className="min-w-0">
-            <div className={`font-bold text-sm ${open ? 'text-white' : 'text-slate-900'}`}>Global Style Settings</div>
-            <div className={`text-[10px] mt-0.5 truncate font-medium ${open ? 'text-slate-400' : 'text-slate-500'}`}>Font · Size · Color · Background · Spacing · Alignment — for all block types</div>
+            <div className="font-bold text-sm text-white">Global Style Settings</div>
+            <div className="text-[10px] mt-0.5 truncate font-medium text-white/50">Font · Size · Color · Background · Spacing · Alignment — for all block types</div>
           </div>
         </div>
-        <span className={`text-xs shrink-0 ml-2 ${open ? 'text-slate-500' : 'text-slate-400'}`}>{open ? '▲' : '▼'}</span>
+        <span className={`text-xs shrink-0 ml-2 text-white/40`}>{open ? '▲' : '▼'}</span>
       </button>
 
       {open && (
-        <div className="bg-white">
+        <div className="bg-transparent">
           {/* ── Tab bar ── */}
-          <div className="flex border-b border-slate-200 overflow-x-auto scrollbar-hide py-1">
+          <div className="flex border-b border-white/[0.06] overflow-x-auto scrollbar-hide py-1">
             {STYLE_TABS.map(t => (
               <button key={t.key} onClick={() => setTab(t.key)}
-                className={`flex-1 min-w-[85px] px-3 py-2.5 border-none bg-transparent cursor-pointer text-xs font-bold whitespace-nowrap transition-all border-b-[3px] ${tab === t.key ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}>
+                className={`flex-1 min-w-[85px] px-3 py-2.5 border-none bg-transparent cursor-pointer text-xs font-bold whitespace-nowrap transition-all border-b-[3px] ${tab === t.key ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-white/50 hover:bg-white/[0.04] hover:text-white'}`}>
                 <span className="inline-block w-2.5 h-2.5 rounded-full mr-2 align-middle shadow-inner shadow-black/20" style={{ background: t.dot }} />
                 {t.label}
               </button>
@@ -158,7 +157,7 @@ function StyleEditor({ docStyles, setDocStyles }) {
                 <div className="flex gap-4 mb-5">
                   {[["Bold", "bold"], ["Italic", "italic"]].map(([lb, key]) => (
                     <button key={key} onClick={() => set(tab, key, !s[key])}
-                      className={`flex-1 py-2.5 rounded-lg border-2 text-sm font-bold transition-all focus:outline-none ${s[key] ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
+                      className={`flex-1 py-2.5 rounded-lg border-2 text-sm font-bold transition-all focus:outline-none ${s[key] ? 'border-indigo-500 bg-indigo-500/20 text-indigo-300 shadow-sm' : 'border-white/[0.08] bg-white/[0.02] text-white/60 hover:bg-white/[0.04]'}`}
                       style={{ fontStyle: key === "italic" ? "italic" : "normal" }}>
                       {lb} {s[key] ? "✓" : ""}
                     </button>
@@ -166,8 +165,8 @@ function StyleEditor({ docStyles, setDocStyles }) {
                 </div>
 
                 {/* Live preview */}
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl mb-4">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Live Preview</div>
+                <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl mb-4">
+                  <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Live Preview</div>
                   <div style={{
                     fontFamily: s.font, fontSize: s.size, color: s.color, textAlign: s.align,
                     fontWeight: s.bold ? "bold" : "normal", fontStyle: s.italic ? "italic" : "normal",
@@ -196,10 +195,10 @@ function StyleEditor({ docStyles, setDocStyles }) {
                         const active = bs.styleName === name;
                         return (
                           <button key={name} onClick={() => setBullet("styleName", name)}
-                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 transition-all ${active ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-black shadow-sm' : 'border-slate-200 bg-white text-slate-700 font-bold hover:bg-slate-50'}`}>
-                            <span className={`text-xl w-6 text-center ${active ? 'text-indigo-600' : 'text-slate-500'}`}>{sym}</span>
+                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 transition-all ${active ? 'border-indigo-500 bg-indigo-500/20 text-indigo-300 font-black shadow-sm' : 'border-white/[0.08] bg-white/[0.02] text-white/70 font-bold hover:bg-white/[0.04]'}`}>
+                            <span className={`text-xl w-6 text-center ${active ? 'text-indigo-400' : 'text-white/40'}`}>{sym}</span>
                             <span>{name}</span>
-                            {active && <span className="ml-auto text-indigo-600 font-black">✓</span>}
+                            {active && <span className="ml-auto text-indigo-400 font-black">✓</span>}
                           </button>
                         );
                       })}
@@ -212,13 +211,13 @@ function StyleEditor({ docStyles, setDocStyles }) {
                       <FL>Indent Left (twips)</FL>
                       <input type="number" min={0} max={2880} step={120} value={bs.indentLeft || 720}
                         onChange={e => setBullet("indentLeft", Number(e.target.value))} className={iStClass} />
-                      <div className="text-[10px] text-slate-400 mt-1.5 font-medium">Default: 720 (½ inch)</div>
+                      <div className="text-[10px] text-white/40 mt-1.5 font-medium">Default: 720 (½ inch)</div>
                     </div>
                     <div>
                       <FL>Hanging Indent (twips)</FL>
                       <input type="number" min={0} max={1440} step={120} value={bs.hanging || 360}
                         onChange={e => setBullet("hanging", Number(e.target.value))} className={iStClass} />
-                      <div className="text-[10px] text-slate-400 mt-1.5 font-medium">Default: 360 (¼ inch)</div>
+                      <div className="text-[10px] text-white/40 mt-1.5 font-medium">Default: 360 (¼ inch)</div>
                     </div>
                   </div>
 
@@ -238,8 +237,8 @@ function StyleEditor({ docStyles, setDocStyles }) {
                   </div>
 
                   {/* Live preview */}
-                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl mb-4">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Live Preview</div>
+                  <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl mb-4">
+                    <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Live Preview</div>
                     {["First bullet point", "Second bullet point", "Third bullet point"].map((text, i) => (
                       <div key={i} style={{ display: "flex", gap: 10, marginBottom: bs.itemSpacingAfter ?? 6, lineHeight: bs.lineSpacing || 1.5, fontFamily: (docStyles.paragraph || docStyles.body)?.font || "Times New Roman", fontSize: (docStyles.paragraph || docStyles.body)?.size || 12, color: (docStyles.paragraph || docStyles.body)?.color || "#000000", paddingLeft: Math.round((bs.indentLeft || 720) / 20) }}>
                         <span style={{ flexShrink: 0, minWidth: 16 }}>{previewSymbol}</span>
@@ -292,8 +291,8 @@ function StyleEditor({ docStyles, setDocStyles }) {
                 </div>
 
                 {/* Table live preview */}
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl mb-4">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Live Preview</div>
+                <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl mb-4">
+                  <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Live Preview</div>
                   <TablePreview />
                 </div>
               </>
@@ -331,9 +330,9 @@ function StyleEditor({ docStyles, setDocStyles }) {
                         return (
                           <button key={p.label}
                             onClick={() => setDocStyles(prev => ({ ...prev, pageMargins: { ...p.vals } }))}
-                            className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${active ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${active ? 'border-indigo-500 bg-indigo-500/20 text-indigo-300 shadow-sm' : 'border-white/[0.08] bg-white/[0.02] text-white/60 hover:bg-white/[0.04]'}`}>
                             <div className="font-bold text-sm mb-1">{p.label}</div>
-                            <div className={`text-[10px] font-medium tracking-wide ${active ? 'text-indigo-500' : 'text-slate-400'}`}>
+                            <div className={`text-[10px] font-medium tracking-wide ${active ? 'text-indigo-400' : 'text-white/40'}`}>
                               T:{p.vals.top}" L:{p.vals.left}"
                             </div>
                           </button>
@@ -353,8 +352,8 @@ function StyleEditor({ docStyles, setDocStyles }) {
                   </div>
 
                   {/* Visual margin preview */}
-                  <div className="p-5 bg-slate-50 border border-slate-200 rounded-xl mb-4">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Page Preview</div>
+                  <div className="p-5 bg-white/[0.02] border border-white/[0.06] rounded-xl mb-4">
+                    <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">Page Preview</div>
                     <div className="flex justify-center">
                       {/* A4 page mock */}
                       <div className="relative w-[120px] h-[170px] bg-white border border-slate-200 rounded-md shadow-md">
@@ -394,12 +393,12 @@ function StyleEditor({ docStyles, setDocStyles }) {
             <div className="flex justify-end pt-2">
               {tab !== "pageMargins" ? (
                 <button onClick={() => reset(tab)}
-                  className="px-4 py-2 border border-slate-200 rounded-lg bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 cursor-pointer text-xs font-bold transition-colors shadow-sm">
+                  className="px-4 py-2 border border-white/[0.08] rounded-lg bg-white/[0.04] text-white/60 hover:bg-white/[0.08] hover:text-white cursor-pointer text-xs font-bold transition-colors shadow-sm">
                   ↺ Reset {STYLE_TABS.find(t => t.key === tab)?.label} to defaults
                 </button>
               ) : (
                 <button onClick={() => setDocStyles(p => ({ ...p, pageMargins: { ...DEFAULT_DOC_STYLES.pageMargins } }))}
-                  className="px-4 py-2 border border-slate-200 rounded-lg bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 cursor-pointer text-xs font-bold transition-colors shadow-sm">
+                  className="px-4 py-2 border border-white/[0.08] rounded-lg bg-white/[0.04] text-white/60 hover:bg-white/[0.08] hover:text-white cursor-pointer text-xs font-bold transition-colors shadow-sm">
                   ↺ Reset Margins to Normal (1")
                 </button>
               )}
