@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { recordSessionVisit, trackPromptSubmitted, trackBuildDocx } from '../tracking.js';
 import { DEFAULT_DOC_STYLES } from '../utils/constants.js';
 import Step1Prompt from '../components/CoreAppFlow/Step1Prompt.jsx';
 import Step2Editor from '../components/CoreAppFlow/Step2Editor.jsx';
@@ -23,18 +22,7 @@ export default function CoreAppFlow() {
   });
   const [loadingPhase, setLoadingPhase] = useState(null);
 
-  useEffect(() => {
-    try {
-      const k = "docreplacer_last_session_track";
-      const now = Date.now();
-      const last = parseInt(sessionStorage.getItem(k) || "0", 10);
-      if (now - last < 1500) return;
-      sessionStorage.setItem(k, String(now));
-    } catch {
-      /* ignore */
-    }
-    recordSessionVisit();
-  }, []);
+
 
   useEffect(() => {
     if (!window.JSZip) {
@@ -119,7 +107,6 @@ export default function CoreAppFlow() {
               <Step1Prompt
                 setLoadingPhase={setLoadingPhase}
                 onDone={({ elements: els, docTitle, pages }) => {
-                  trackPromptSubmitted();
                   setElements(els);
                   setTargetPages(pages);
                   setStep(1);
@@ -135,7 +122,7 @@ export default function CoreAppFlow() {
                 targetPages={targetPages}
                 setLoadingPhase={setLoadingPhase}
                 onBack={() => setStep(0)}
-                onDone={r => { trackBuildDocx(); setResult(r); setStep(2); }} />
+                onDone={r => { setResult(r); setStep(2); }} />
             )}
 
             {step === 2 && result && (

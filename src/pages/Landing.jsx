@@ -1,431 +1,457 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
-import { Sparkles, ArrowRight, Lock, Clock, FileText, CheckCircle2, Zap, Shield, Layers, ChevronRight, Star, Menu, X } from 'lucide-react';
 
-export default function LandingPage() {
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+export default function HackathonLanding() {
+  const [typed, setTyped] = useState('');
+  const [showDoc, setShowDoc] = useState(false);
+  const prompt = 'Write a project proposal for a mobile app startup...';
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
+    let i = 0;
+    const iv = setInterval(() => {
+      i++;
+      setTyped(prompt.slice(0, i));
+      if (i >= prompt.length) { clearInterval(iv); setTimeout(() => setShowDoc(true), 300); }
+    }, 48);
+    return () => clearInterval(iv);
   }, []);
 
+  const features = [
+    {
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="10" r="8" stroke="#818cf8" strokeWidth="1.5" strokeDasharray="3 2" />
+          <path d="M10 6v4l2.5 2" stroke="#818cf8" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      ),
+      accent: '#818cf8',
+      bg: 'rgba(99,102,241,0.08)',
+      border: 'rgba(99,102,241,0.2)',
+      title: 'Zero Server Architecture',
+      blurb: 'Every byte — generation, XML assembly, export — runs as client-side JS. No backend, no latency, no breach surface.',
+      tag: 'WebWorker + OpenXML',
+    },
+    {
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <rect x="4" y="3" width="12" height="14" rx="2" stroke="#a78bfa" strokeWidth="1.5" />
+          <path d="M7 7h6M7 10h5M7 13h3" stroke="#a78bfa" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      ),
+      accent: '#a78bfa',
+      bg: 'rgba(139,92,246,0.08)',
+      border: 'rgba(139,92,246,0.2)',
+      title: 'Real .docx — Not PDF',
+      blurb: 'Genuine OpenXML Word files with headings, tables, lists. Opens in Word, Google Docs, LibreOffice — fully editable.',
+      tag: 'OpenXML Compliant',
+    },
+    {
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M3 10c0-3.9 3.1-7 7-7s7 3.1 7 7" stroke="#60a5fa" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M10 6v4l2.5 1.5" stroke="#60a5fa" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      ),
+      accent: '#60a5fa',
+      bg: 'rgba(59,130,246,0.08)',
+      border: 'rgba(59,130,246,0.2)',
+      title: 'Streaming Generation',
+      blurb: 'Watch document sections appear in real time. No waiting for the full response — sections stream as they\'re written.',
+      tag: 'Live Output',
+    },
+    {
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <rect x="3" y="3" width="14" height="14" rx="2" stroke="#34d399" strokeWidth="1.5" />
+          <path d="M7 8h6M7 11h4" stroke="#34d399" strokeWidth="1.2" strokeLinecap="round" />
+          <path d="M13 13l1.5 1.5" stroke="#34d399" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      ),
+      accent: '#34d399',
+      bg: 'rgba(52,211,153,0.08)',
+      border: 'rgba(52,211,153,0.2)',
+      title: 'Block-Level Editing',
+      blurb: 'Every paragraph, table, heading is an individually editable block. Rearrange, tweak, adjust before final export.',
+      tag: 'Full Structure Control',
+    },
+    {
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M10 3L4 6v4.5c0 3.8 2.7 7 6 7.5 3.3-.5 6-3.7 6-7.5V6L10 3z" stroke="#f472b6" strokeWidth="1.5" strokeLinejoin="round" />
+          <path d="M7.5 10l2 2 3-3" stroke="#f472b6" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ),
+      accent: '#f472b6',
+      bg: 'rgba(244,114,182,0.08)',
+      border: 'rgba(244,114,182,0.2)',
+      title: 'Private by Design',
+      blurb: 'No telemetry, no logs, no user data anywhere. Your prompts are ephemeral — gone when you close the tab.',
+      tag: 'No Tracking · No Logs',
+    },
+    {
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="10" r="7" stroke="#fbbf24" strokeWidth="1.5" />
+          <path d="M7.5 10l2 2 3-3" stroke="#fbbf24" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ),
+      accent: '#fbbf24',
+      bg: 'rgba(251,191,36,0.08)',
+      border: 'rgba(251,191,36,0.2)',
+      title: 'Completely Free',
+      blurb: 'No freemium tiers, no export limits, no watermarks. No sign-up. Open and generate as many documents as you want.',
+      tag: 'Free Forever',
+    },
+  ];
+
+  const steps = [
+    { n: '01', label: 'Type a prompt', sub: 'Describe your document in plain English' },
+    { n: '02', label: 'Review blocks', sub: 'Edit each section before export' },
+    { n: '03', label: 'Download .docx', sub: 'One click — assembled in your browser' },
+  ];
+
   return (
-    <div className="relative min-h-screen bg-[#0a0a0f] text-white font-sans overflow-x-hidden">
-
-      {/* --- SEO & META TAGS HEAD INJECTION --- */}
-      <Helmet>
-        <title>DocReplacer | Free AI Word Document Generator & .docx Builder</title>
-        <meta name="description" content="Generate professional Microsoft Word (.docx) files instantly from text prompts. A 100% free, private, client-side AI document creator with no login required." />
-        <meta name="keywords" content="Free AI Word document generator, client-side docx creator, generate docx from prompt, private AI document writer, OpenXML builder, no login word doc" />
-        <link rel="canonical" href="https://docreplacer.online/" />
-
-        {/* Open Graph / Facebook */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://docreplacer.online/" />
-        <meta property="og:title" content="DocReplacer | Private AI .docx Generator" />
-        <meta property="og:description" content="Turn a simple prompt into a fully-formatted .docx Word file securely in your browser. No server, no tracking." />
-        <meta property="og:image" content="https://docreplacer.online/Logo.ico" />
-
-        {/* Twitter */}
-        <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:url" content="https://docreplacer.online/" />
-        <meta property="twitter:title" content="DocReplacer | Private AI .docx Generator" />
-        <meta property="twitter:description" content="Turn a simple prompt into a fully-formatted .docx Word file securely in your browser. No server, no tracking." />
-        <meta property="twitter:image" content="https://docreplacer.online/Logo.ico" />
-      </Helmet>
-
-      {/* AEO: SoftwareApplication Schema */}
-      <script type="application/ld+json">
-        {JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "SoftwareApplication",
-          "name": "DocReplacer",
-          "operatingSystem": "Web",
-          "applicationCategory": "BusinessApplication",
-          "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "USD"
-          },
-          "description": "Free AI-powered tool that generates professional .docx files from text prompts privately, entirely in the browser.",
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.9",
-            "ratingCount": "100"
-          }
-        })}
-      </script>
+    <div style={{ minHeight: '100vh', background: '#080810', color: 'white', overflowX: 'hidden', fontFamily: "'IBM Plex Sans', sans-serif" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Outfit:wght@600;700&display=swap');
-        * { font-family: 'DM Sans', sans-serif; }
-        h1, h2, .serif { font-family: 'DM Serif Display', serif; }
-        .mono { font-family: 'DM Mono', monospace; }
-        .brand-font { font-family: 'Outfit', sans-serif !important; font-weight: 700 !important; letter-spacing: -0.02em !important; }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes float { 0%,100% { transform:translateY(0px); } 50% { transform:translateY(-8px); } }
-        .fade-up { animation: fadeUp 0.7s ease forwards; }
-        .fade-up-1 { animation: fadeUp 0.7s 0.1s ease both; }
-        .fade-up-2 { animation: fadeUp 0.7s 0.2s ease both; }
-        .fade-up-3 { animation: fadeUp 0.7s 0.3s ease both; }
-        .fade-up-4 { animation: fadeUp 0.7s 0.4s ease both; }
-        .glow-btn { box-shadow: 0 0 0 0 rgba(99,102,241,0.4); transition: all 0.3s; }
-        .glow-btn:hover { box-shadow: 0 0 28px 4px rgba(99,102,241,0.35), 0 8px 24px rgba(0,0,0,0.4); transform: translateY(-1px); }
-        .card-hover { transition: all 0.3s; border: 1px solid rgba(255,255,255,0.06); }
-        .card-hover:hover { border-color: rgba(99,102,241,0.3); transform: translateY(-2px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-        .floating { animation: float 4s ease-in-out infinite; }
-        .grid-bg { background-image: linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px); background-size: 48px 48px; }
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        .syne { font-family: 'Syne', sans-serif; }
+        .mono { font-family: 'IBM Plex Mono', monospace; }
 
-        /* Custom Scrollbar scoped to landing page styles */
-        ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { background: #0a0a0f; }
-        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 5px; border: 2px solid #0a0a0f; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.8); }
-        * { scrollbar-width: thin; scrollbar-color: rgba(99, 102, 241, 0.5) #0a0a0f; }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+        @keyframes docLine { from { width:0; opacity:0; } to { opacity:1; } }
+        @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+        @keyframes glow-pulse { 0%,100%{ box-shadow: 0 0 20px rgba(99,102,241,0.3); } 50%{ box-shadow: 0 0 36px rgba(99,102,241,0.55); } }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+        @keyframes spin-slow { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes slideIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+
+        .f1 { animation: fadeUp 0.5s 0.05s both; }
+        .f2 { animation: fadeUp 0.5s 0.15s both; }
+        .f3 { animation: fadeUp 0.5s 0.28s both; }
+        .f4 { animation: fadeUp 0.5s 0.4s both; }
+        .f5 { animation: fadeUp 0.5s 0.52s both; }
+
+        .cursor::after { content:'|'; animation: blink 0.9s step-end infinite; color:#818cf8; }
+        .float-anim { animation: float 5s ease-in-out infinite; }
+        .btn-primary {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 13px 30px; border-radius: 999px;
+          background: linear-gradient(135deg,#6366f1,#8b5cf6);
+          font-size: 14px; font-weight: 700; color: white;
+          text-decoration: none; border: none; cursor: pointer;
+          transition: all 0.25s; animation: glow-pulse 2.5s ease infinite;
+        }
+        .btn-primary:hover { transform: translateY(-1px); filter: brightness(1.1); }
+        .btn-ghost {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 13px 22px; border-radius: 999px;
+          border: 1px solid rgba(255,255,255,0.1);
+          font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.5);
+          text-decoration: none; cursor: pointer; transition: all 0.25s; background: transparent;
+        }
+        .btn-ghost:hover { color: white; border-color: rgba(255,255,255,0.25); }
+        .feat-card {
+          padding: 22px; border-radius: 14px;
+          border: 1px solid rgba(255,255,255,0.06);
+          background: rgba(255,255,255,0.02);
+          transition: all 0.22s;
+        }
+        .feat-card:hover { border-color: rgba(99,102,241,0.25); transform: translateY(-2px); background: rgba(255,255,255,0.035); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #080810; }
+        ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.35); border-radius: 4px; }
+
+        @media (max-width: 640px) {
+          .hide-mobile { display: none !important; }
+          .steps-row { flex-direction: column !important; }
+          .steps-arrow { display: none !important; }
+          .hero-btns { flex-direction: column !important; align-items: stretch !important; }
+          .hero-btns a, .hero-btns button { text-align: center; justify-content: center; }
+        }
       `}</style>
 
-      {/* Ambient blobs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-[-15%] left-[-10%] w-[55%] h-[55%] rounded-full" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)', filter: 'blur(60px)' }} />
-        <div className="absolute top-[20%] right-[-15%] w-[50%] h-[60%] rounded-full" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)', filter: 'blur(80px)' }} />
-        <div className="absolute bottom-[10%] left-[20%] w-[60%] h-[40%] rounded-full" style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.07) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+      {/* Ambient bg */}
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '-15%', left: '-5%', width: '55%', height: '55%', background: 'radial-gradient(circle, rgba(99,102,241,0.11) 0%, transparent 65%)', filter: 'blur(90px)' }} />
+        <div style={{ position: 'absolute', bottom: '5%', right: '-5%', width: '45%', height: '45%', background: 'radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 65%)', filter: 'blur(80px)' }} />
+        <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0, opacity: 0.022 }}>
+          <defs><pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M 48 0 L 0 0 0 48" fill="none" stroke="white" strokeWidth="1" /></pattern></defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
+        </svg>
       </div>
 
-      {/* Nav */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-white/[0.06]' : ''}`}>
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl shadow-lg flex items-center justify-center" style={{ background: '#c7cbe8' }}>
-              <img src="/Logo.ico" alt="DocReplacer AI Word Generator Logo" className="w-6 h-6 object-contain" />
-            </div>
-            <span className="brand-font text-[18px] text-white">DocReplacer</span>
-          </div>
-
-          <div className="hidden md:flex items-center gap-8">
-            {[
-              { label: 'Home', href: '#' },
-              { label: 'Features', href: '#features' },
-              { label: 'How It Works', href: '/how-it-works' },
-              // { label: 'Engine', href: '/engine' },
-              { label: 'Use Cases', href: '/use-cases' },
-              { label: 'Docs', href: '/docs' },
-              { label: 'Blog', href: '/blog' },
-            ].map(({ label, href }) => (
-              href.startsWith('/') ? (
-                <Link key={label} to={href} className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">{label}</Link>
-              ) : (
-                <a key={label} href={href} className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">{label}</a>
-              )
-            ))}
-          </div>
-
-          <div className="flex items-center gap-4">
-            <Link to="/app" className="hidden lg:inline-flex items-center gap-1.5 px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-semibold text-[13px] transition-all glow-btn">
-              Get DocReplacer — It's Free
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="md:hidden p-2 text-white/70 hover:text-white transition-colors z-[60]"
-              aria-label="Toggle Menu"
-            >
-              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
+      {/* ── Nav ── */}
+      <nav style={{ position: 'relative', zIndex: 10, maxWidth: 1100, margin: '0 auto', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+            <rect width="26" height="26" rx="7" fill="rgba(99,102,241,0.15)" stroke="rgba(99,102,241,0.3)" strokeWidth="1" />
+            <rect x="6" y="7" width="14" height="2" rx="1" fill="#818cf8" />
+            <rect x="6" y="12" width="10" height="2" rx="1" fill="#818cf8" opacity=".6" />
+            <rect x="6" y="17" width="12" height="2" rx="1" fill="#818cf8" opacity=".35" />
+          </svg>
+          <span className="syne" style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em' }}>DocReplacer</span>
         </div>
 
-        {/* Mobile Menu Overlay */}
-        <div className={`fixed inset-0 z-[55] bg-[#0a0a0f] backdrop-blur-2xl transition-all duration-500 md:hidden ${menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-          <div className="flex flex-col items-center justify-center min-h-screen gap-8 p-6">
-            {[
-              { label: 'Home', href: '#' },
-              { label: 'Features', href: '#features' },
-              { label: 'How It Works', href: '/how-it-works' },
-              //{ label: 'Engine', href: '/engine' },
-              { label: 'Use Cases', href: '/use-cases' },
-              { label: 'Docs', href: '/docs' },
-              { label: 'Blog', href: '/blog' },
-            ].map(({ label, href }, i) => (
-              <div
-                key={label}
-                className={`transition-all duration-500 delay-[${i * 50}ms] ${menuOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
-              >
-                {href.startsWith('/') ? (
-                  <Link
-                    to={href}
-                    onClick={() => setMenuOpen(false)}
-                    className="text-[24px] font-bold text-white/70 hover:text-white transition-colors"
-                  >
-                    {label}
-                  </Link>
-                ) : (
-                  <a
-                    href={href}
-                    onClick={() => setMenuOpen(false)}
-                    className="text-[24px] font-bold text-white/70 hover:text-white transition-colors"
-                  >
-                    {label}
-                  </a>
-                )}
-              </div>
-            ))}
-            <Link
-              to="/app"
-              onClick={() => setMenuOpen(false)}
-              className="mt-4 inline-flex items-center gap-2 px-8 py-4 bg-indigo-600 text-white rounded-full font-bold text-[16px] transition-all glow-btn"
-            >
-              Launch App <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
+        <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+          {[['Features', '#features'], ['How it works', '#how']].map(([l, h]) => (
+            <a key={l} href={h} style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)', textDecoration: 'none', transition: 'color 0.2s' }}
+              onMouseEnter={e => e.target.style.color = 'white'} onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.38)'}>{l}</a>
+          ))}
         </div>
+
+        <Link to="/app" className="btn-primary" style={{ padding: '9px 20px', fontSize: 13, animation: 'none', boxShadow: '0 0 18px rgba(99,102,241,0.3)' }}>
+          Launch Now
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 5.5h8M6 2l3.5 3.5L6 9" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </Link>
       </nav>
 
-      {/* Hero */}
-      <section className="relative z-10 pt-24 md:pt-32 pb-20 px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Guiding pill */}
-          <div className="flex justify-center mb-8 fade-up">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-[12px] font-semibold tracking-wide">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-              Private AI document builder — fast, secure, and ready to download
-            </div>
-          </div>
+      {/* ── Hero ── */}
+      <section style={{ position: 'relative', zIndex: 10, padding: '60px 24px 48px', maxWidth: 1100, margin: '0 auto', textAlign: 'center' }}>
 
-          <h1 className="serif text-[28px] sm:text-[42px] md:text-[64px] text-white leading-[1.2] md:leading-[1.05] tracking-tight mb-6 fade-up-1 px-4 text-center">
-            Write Professional<br className="hidden md:block" />
-            <span className="italic text-transparent bg-clip-text pr-2 md:pr-4 mx-2 md:mx-0" style={{ backgroundImage: 'linear-gradient(135deg, #818cf8, #a78bfa, #c084fc)' }}>Documents</span><br className="hidden md:block" />
-            made simple.
-          </h1>
+        {/* Hackathon badge */}
+        {/* <div className="f1" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 14px', borderRadius: 999, border: '1px solid rgba(251,191,36,0.35)', background: 'rgba(251,191,36,0.07)', marginBottom: 24 }}>
+          <span style={{ fontSize: 12 }}>🏆</span>
+          <span className="mono" style={{ fontSize: 10, color: 'rgba(251,191,36,0.85)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 500 }}>Hackathon Submission 2025</span>
+        </div> 
+        */
+        }
 
-          <p className="text-center text-white/50 text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed font-medium fade-up-2">
-            Turn a simple text prompt into a fully-formatted <span className="text-white/80">.docx Word file</span> — your free, client-side AI document creator.
-          </p>
+        <h1 className="syne f2" style={{ fontSize: 'clamp(36px,7vw,76px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.03em', marginBottom: 22 }}>
+          Prompt to{' '}
+          <span style={{ background: 'linear-gradient(135deg,#818cf8,#a78bfa,#c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>.docx</span>
+          <br />in your browser
+        </h1>
 
-          {/* 3-step guide strip */}
-          <div className="flex justify-center mb-10 fade-up-2">
-            <div className="inline-flex items-center gap-4 px-6 py-3 rounded-2xl bg-white/[0.04] border border-white/[0.07]">
-              {['Describe your doc', 'Review & edit blocks', 'Download .docx'].map((step, i) => (
-                <React.Fragment key={step}>
-                  <div className="flex items-center gap-2 text-[11px] md:text-[12px] font-semibold text-white/50">
-                    <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-[10px] font-bold shrink-0">{i + 1}</span>
-                    <span className="whitespace-nowrap">{step}</span>
-                  </div>
-                  {i < 2 && <ChevronRight className="hidden sm:block w-3 h-3 text-white/20 shrink-0" />}
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
+        <p className="f3" style={{ color: 'rgba(255,255,255,0.42)', fontSize: 17, lineHeight: 1.7, maxWidth: 520, margin: '0 auto 36px', fontWeight: 300 }}>
+          Type a prompt. Get a fully-formatted Word document. No server, no login, no cloud — everything builds locally in your browser.
+        </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 fade-up-3">
-            <Link to="/app" className="group flex items-center gap-2.5 px-7 py-3.5 rounded-full font-bold text-[15px] text-white glow-btn" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-              Get Started for Free
-              <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
-                <ArrowRight className="w-3 h-3" />
-              </span>
-            </Link>
-            <Link to="/how-it-works" className="flex items-center gap-2 px-7 py-3.5 rounded-full font-semibold text-[15px] text-white/70 hover:text-white border border-white/10 hover:border-white/20 transition-all bg-white/[0.03]">
-              Learn how
-            </Link>
-          </div>
-
-          {/* Trust badges */}
-          <div className="flex flex-wrap justify-center items-center gap-8 mb-20 fade-up-4">
-            {[
-              { icon: <Clock className="w-3.5 h-3.5" />, label: '7-MIN SETUP' },
-              { icon: <Lock className="w-3.5 h-3.5" />, label: 'CLIENT SIDE BUILDING' },
-              { icon: <FileText className="w-3.5 h-3.5" />, label: 'OPENXML COMPLIANT' },
-              { icon: <Star className="w-3.5 h-3.5" />, label: 'COMPLETELY FREE' },
-              { icon: <CheckCircle2 className="w-3.5 h-3.5" />, label: 'NO LOGIN REQUIRED' },
-            ].map(({ icon, label }) => (
-              <div key={label} className="flex items-center gap-2 text-[11px] font-bold text-white/30 tracking-[0.12em] uppercase">
-                <span className="text-indigo-500">{icon}</span> {label}
-              </div>
-            ))}
-          </div>
-
-          {/* External Platform Badges */}
-          <div className="flex flex-wrap justify-center items-center gap-8 mb-20 fade-up-4">
-            <a href="https://submitaitools.org" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
-              <img
-                src="https://submitaitools.org/static_submitaitools/images/submitaitools.png"
-                alt="Submit AI Tools"
-                style={{ borderRadius: '10px', width: '200px', height: '60px' }}
-              />
-            </a>
-            <a href="https://fazier.com" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
-              <img
-                src="https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=featured&theme=dark"
-                width={250}
-                alt="Fazier badge"
-              />
-            </a>
-            <a href="https://aihuntlist.com/tool/docreplacer" target="_blank" rel="noopener noreferrer">
-              <img src="https://aihuntlist.com/badge-dark.svg" alt="Featured on aihuntlist.com" style={{ height: '54px', width: 'auto' }} />
-            </a>
-          </div>
+        <div className="f4 hero-btns" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginBottom: 48, flexWrap: 'wrap' }}>
+          <Link to="/app" className="btn-primary">
+            Launch Now
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5h10M7 2.5l4 4-4 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </Link>
+          <a href="#features" className="btn-ghost">See features</a>
         </div>
 
-        {/* App preview graphic */}
-        <div className="max-w-5xl mx-auto fade-up-4">
-          <div className="relative rounded-[20px] overflow-hidden border border-white/[0.08]" style={{ background: 'rgba(255,255,255,0.03)', boxShadow: '0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
-            {/* Window chrome */}
-            <div className="flex items-center px-5 py-3.5 border-b border-white/[0.06] bg-white/[0.03]">
-              <div className="flex gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-500/60" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
-                <div className="w-3 h-3 rounded-full bg-green-500/60" />
+        {/* Trust pills */}
+        <div className="f5" style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 20 }}>
+          {[
+            { icon: '🔒', label: 'No Server' },
+            { icon: '⚡', label: 'Instant Build' },
+            { icon: '🆓', label: 'Free Forever' },
+            { icon: '🕵️', label: '100% Private' },
+            { icon: '📄', label: 'Real .docx' },
+          ].map(({ icon, label }) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.09em', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: 13 }}>{icon}</span>{label}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Demo window ── */}
+      <section style={{ position: 'relative', zIndex: 10, padding: '0 24px 80px' }}>
+        <div style={{ maxWidth: 860, margin: '0 auto' }} className="float-anim">
+          <div style={{ borderRadius: 18, border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.025)', overflow: 'hidden', boxShadow: '0 32px 72px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+            {/* Browser bar */}
+            <div style={{ display: 'flex', alignItems: 'center', padding: '11px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)', gap: 14 }}>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {['rgba(239,68,68,0.55)', 'rgba(234,179,8,0.55)', 'rgba(34,197,94,0.45)'].map(c => (
+                  <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
+                ))}
               </div>
-              <div className="mx-auto mono text-[11px] text-white/25 bg-white/[0.04] px-14 py-1 rounded-md border border-white/[0.07]">docreplacer.local</div>
-              <div className="w-16" />
+              <div className="mono" style={{ margin: '0 auto', fontSize: 10, color: 'rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.04)', padding: '3px 32px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.05)' }}>
+                docreplacer.online — 100% client-side
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, color: 'rgba(74,222,128,0.7)', fontWeight: 600, letterSpacing: '0.06em' }} className="mono">
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#4ade80', display: 'inline-block', animation: 'pulse 2s ease infinite' }} />
+                LOCAL
+              </div>
             </div>
 
-            <div className="grid-bg flex h-[320px] md:h-[440px]">
-              {/* Sidebar */}
-              <div className="w-60 shrink-0 border-r border-white/[0.06] p-5 hidden md:flex flex-col gap-6 bg-white/[0.02]">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#c7cbe8' }}>
-                    <img src="/Logo.ico" alt="DocReplacer Logo" className="w-5 h-5 object-contain" />
-                  </div>
-                  <span className="brand-font text-[14px] text-white">DocReplacer</span>
+            <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', minHeight: 340 }}>
+              {/* Left – prompt */}
+              <div style={{ borderRight: '1px solid rgba(255,255,255,0.05)', padding: 18, background: 'rgba(255,255,255,0.015)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.12em', textTransform: 'uppercase' }} className="mono">Your Prompt</span>
+                <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 9, border: '1px solid rgba(99,102,241,0.2)', padding: 11, flex: 1 }}>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.72)', lineHeight: 1.7 }} className="cursor">{typed}</span>
                 </div>
-                <div className="space-y-1">
-                  <div className="text-[10px] font-bold text-white/25 uppercase tracking-widest mb-3">Menu</div>
-                  {[
-                    { icon: <FileText className="w-4 h-4" />, label: 'Documents', active: true },
-                  ].map(({ icon, label, active }) => (
-                    <div key={label} className={`flex items-center gap-3 text-[13px] font-semibold px-3 py-2.5 rounded-xl ${active ? 'bg-indigo-500/20 text-indigo-300' : 'text-white/30'}`}>
-                      <span className={active ? 'text-indigo-400' : ''}>{icon}</span> {label}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {['Heading style', 'Page count', 'Language'].map(opt => (
+                    <div key={opt} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 9px', borderRadius: 7, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{opt}</span>
+                      <span style={{ fontSize: 9, color: 'rgba(99,102,241,0.6)' }} className="mono">auto</span>
                     </div>
                   ))}
                 </div>
+                <Link to="/app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '9px', borderRadius: 9, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', fontSize: 11, fontWeight: 700, color: 'white', textDecoration: 'none' }}>
+                  <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1v9M1 5.5h9" stroke="white" strokeWidth="2" strokeLinecap="round" /></svg>
+                  Generate .docx
+                </Link>
               </div>
 
-              {/* Canvas */}
-              <div className="flex-1 p-4 md:p-8 flex flex-col items-center justify-start overflow-hidden relative">
-                <div className="w-full max-w-[280px] md:max-w-sm floating">
-                  <div className="bg-white/[0.06] border border-white/[0.1] backdrop-blur-sm rounded-2xl p-4 flex items-center gap-4 mb-6 shadow-xl">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0">
-                      <FileText className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <div className="font-bold text-[13px] text-white">Business Proposal</div>
-                      <div className="text-[11px] text-white/40">Trigger</div>
-                    </div>
-                    <div className="ml-auto w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+              {/* Right – preview */}
+              <div style={{ padding: 22, position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(99,102,241,0.15),transparent)', animation: 'float 3s ease-in-out infinite', pointerEvents: 'none', zIndex: 5 }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.12em', textTransform: 'uppercase' }} className="mono">Live Preview</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, color: 'rgba(129,140,248,0.7)' }} className="mono">
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#818cf8', display: 'inline-block', animation: 'blink 1s step-end infinite' }} />
+                    Building...
                   </div>
-                  <div className="flex justify-center mb-5">
-                    <div className="w-px h-8 bg-gradient-to-b from-indigo-500/50 to-transparent" />
-                  </div>
-                  <div className="bg-white/[0.04] border border-white/[0.07] rounded-xl p-3 flex items-center gap-3 mb-5 ml-8">
-                    <div className="w-7 h-7 rounded-lg bg-violet-500/20 border border-violet-500/30 flex items-center justify-center shrink-0">
-                      <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-[12px] text-white/80">Generate Structure</div>
-                      <div className="text-[10px] text-white/30 mono">AI Processing</div>
-                    </div>
-                  </div>
-                  <div className="flex justify-center mb-5">
-                    <div className="w-px h-6 bg-white/[0.08]" />
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="flex-1 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <div className="text-[11px] font-semibold text-white/70">Add Sections</div>
-                    </div>
-                    <div className="flex-1 bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-indigo-400 shrink-0" />
-                      <div className="text-[11px] font-semibold text-white/70">Export .docx</div>
-                    </div>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 9 }}>
+                  {showDoc && <>
+                    <div style={{ height: 13, width: '55%', borderRadius: 4, background: 'rgba(129,140,248,0.5)', animation: 'slideIn 0.4s both' }} />
+                    <div style={{ height: 7, width: '35%', borderRadius: 3, background: 'rgba(255,255,255,0.15)', animation: 'slideIn 0.4s 0.08s both' }} />
+                    <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '3px 0' }} />
+                    {[0.8, 0.9, 0.7, 0.85, 0.6].map((w, i) => (
+                      <div key={i} style={{ height: 6, width: `${w * 100}%`, borderRadius: 3, background: 'rgba(255,255,255,0.1)', animation: `slideIn 0.35s ${0.15 + i * 0.07}s both` }} />
+                    ))}
+                    <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '3px 0', animation: 'slideIn 0.3s 0.6s both' }} />
+                    <div style={{ height: 9, width: '40%', borderRadius: 4, background: 'rgba(167,139,250,0.35)', animation: 'slideIn 0.35s 0.65s both' }} />
+                    {[0.75, 0.85, 0.65].map((w, i) => (
+                      <div key={i + 10} style={{ height: 6, width: `${w * 100}%`, borderRadius: 3, background: 'rgba(255,255,255,0.08)', animation: `slideIn 0.35s ${0.72 + i * 0.07}s both` }} />
+                    ))}
+                  </>}
+                  {!showDoc && <div style={{ color: 'rgba(255,255,255,0.15)', fontSize: 11, fontStyle: 'italic', textAlign: 'center', padding: '20px 0' }} className="mono">Waiting for prompt...</div>}
+                </div>
+                <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-end' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 8, background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', fontSize: 11, fontWeight: 600, color: 'rgba(129,140,248,0.9)' }}>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v8M3 7l3 3 3-3M1 11h10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    Export .docx
                   </div>
                 </div>
               </div>
             </div>
-            <div className="absolute bottom-0 left-0 right-0 h-28 pointer-events-none" style={{ background: 'linear-gradient(to top, #0a0a0f, transparent)' }} />
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="relative z-10 py-20 md:py-28 px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/[0.04] text-white/50 text-[12px] font-semibold tracking-wide mb-5">✦ Why DocReplacer</div>
-            <h2 className="serif text-[42px] md:text-[56px] text-white leading-tight mb-4">Everything you need to<br /><span className="italic text-white/50">ship documents faster</span></h2>
-            <p className="text-white/40 text-lg max-w-xl mx-auto">Prompt once, get a fully-formatted, ready-to-share Word document in minutes.</p>
+      {/* ── How it works ── */}
+      <section id="how" style={{ position: 'relative', zIndex: 10, padding: '64px 24px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
+          <h2 className="syne" style={{ fontSize: 'clamp(22px,4vw,40px)', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 48 }}>
+            Three steps.{' '}
+            <span style={{ color: 'rgba(255,255,255,0.28)', fontStyle: 'italic' }}>One .docx file.</span>
+          </h2>
+
+          <div className="steps-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0 }}>
+            {steps.map(({ n, label, sub }, i) => (
+              <React.Fragment key={n}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '0 12px' }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 14, border: '1px solid rgba(99,102,241,0.25)', background: 'rgba(99,102,241,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span className="mono" style={{ fontSize: 18, fontWeight: 500, color: 'rgba(129,140,248,0.6)' }}>{n}</span>
+                  </div>
+                  <div>
+                    <div className="syne" style={{ fontSize: 15, fontWeight: 700, color: 'white', marginBottom: 4 }}>{label}</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 300, lineHeight: 1.6 }}>{sub}</div>
+                  </div>
+                </div>
+                {i < steps.length - 1 && (
+                  <div className="steps-arrow" style={{ color: 'rgba(255,255,255,0.15)', fontSize: 18, flexShrink: 0 }}>→</div>
+                )}
+              </React.Fragment>
+            ))}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {[
-              {
-                icon: <Zap className="w-5 h-5 text-indigo-400" />,
-                bg: 'rgba(99,102,241,0.1)',
-                border: 'rgba(99,102,241,0.2)',
-                title: 'Streaming AI Generation',
-                desc: 'Watch your document come alive in real time. Sections appear as the AI writes — no waiting for a full response.',
-                tip: '💡 Use the page selector to control document length and density.',
-              },
-              {
-                icon: <Lock className="w-5 h-5 text-violet-400" />,
-                bg: 'rgba(139,92,246,0.1)',
-                border: 'rgba(139,92,246,0.2)',
-                title: 'Private Client-Side Build',
-                desc: 'Everything runs directly in your browser — your private data never leaves your device, making it perfect for confidential content.',
-                tip: '💡 Your data stays in your browser — nothing is stored or sent to a DB.',
-              },
-              {
-                icon: <Layers className="w-5 h-5 text-blue-400" />,
-                bg: 'rgba(59,130,246,0.1)',
-                border: 'rgba(59,130,246,0.2)',
-                title: 'OpenXML .docx Control',
-                desc: 'Edit every block — paragraphs, tables, bullets, columns. Fine-tune fonts, spacing, and margins before native Word export.',
-                tip: '💡 Use the Style Editor in the Review step to match your brand.',
-              },
-            ].map(({ icon, bg, border, title, desc, tip }) => (
-              <div key={title} className="card-hover rounded-2xl p-6 bg-white/[0.03]">
-                <div className="w-10 h-10 rounded-xl mb-5 flex items-center justify-center" style={{ background: bg, border: `1px solid ${border}` }}>
+        </div>
+      </section>
+
+      {/* ── Features ── */}
+      <section id="features" style={{ position: 'relative', zIndex: 10, padding: '64px 24px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 52 }}>
+            <h2 className="syne" style={{ fontSize: 'clamp(22px,4vw,44px)', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 12 }}>
+              Everything in your browser.{' '}
+              <span style={{ color: 'rgba(255,255,255,0.28)', fontStyle: 'italic' }}>Nothing leaves.</span>
+            </h2>
+            <p style={{ color: 'rgba(255,255,255,0.33)', fontSize: 15, maxWidth: 440, margin: '0 auto', fontWeight: 300 }}>No account. No upload. No cloud. Your data never leaves your machine.</p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px,1fr))', gap: 16 }}>
+            {features.map(({ icon, accent, bg, border, title, blurb, tag }) => (
+              <div key={title} className="feat-card">
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: bg, border: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
                   {icon}
                 </div>
-                <h3 className="font-bold text-[17px] text-white mb-2">{title}</h3>
-                <p className="text-white/45 text-[14px] leading-relaxed mb-4">{desc}</p>
-                <div className="text-[12px] text-indigo-300/70 bg-indigo-500/10 rounded-xl px-3 py-2.5 border border-indigo-500/15 font-medium">{tip}</div>
+                <h3 className="syne" style={{ fontSize: 15, fontWeight: 700, color: 'white', marginBottom: 8, letterSpacing: '-0.01em' }}>{title}</h3>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)', lineHeight: 1.7, marginBottom: 14, fontWeight: 300 }}>{blurb}</p>
+                <span className="mono" style={{ fontSize: 9, color: accent, background: `${bg}`, border: `1px solid ${border}`, padding: '3px 9px', borderRadius: 5, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500 }}>{tag}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How it works Preview */}
-      <section className="relative z-10 py-20 px-6 lg:px-8 border-t border-white/[0.05] bg-white/[0.01]">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="serif text-[32px] md:text-[42px] text-white mb-6">Built for <span className="italic text-white/50">Simplicity</span></h2>
-          <p className="text-white/50 text-lg mb-10 max-w-2xl mx-auto font-medium">DocReplacer transforms your prompts into structured .docx files in three simple steps. No account tracking, no setup, just your local browser doing the work.</p>
+      {/* ── Tech highlight (hackathon-specific) ── */}
+      <section style={{ position: 'relative', zIndex: 10, padding: '64px 24px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ maxWidth: 860, margin: '0 auto' }}>
+          <div style={{ borderRadius: 18, padding: '40px 36px', border: '1px solid rgba(99,102,241,0.15)', background: 'linear-gradient(135deg,rgba(99,102,241,0.06),rgba(139,92,246,0.04))', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% -10%, rgba(99,102,241,0.12), transparent 60%)', pointerEvents: 'none' }} />
+            <div style={{ position: 'relative' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '4px 12px', borderRadius: 999, border: '1px solid rgba(99,102,241,0.3)', background: 'rgba(99,102,241,0.1)', marginBottom: 20 }}>
+                <span className="mono" style={{ fontSize: 9, color: 'rgba(129,140,248,0.8)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>⚙ Under the Hood</span>
+              </div>
+              <h2 className="syne" style={{ fontSize: 'clamp(18px,3vw,32px)', fontWeight: 800, letterSpacing: '-0.02em', color: 'white', marginBottom: 24 }}>
+                Built entirely client-side
+              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 14 }}>
+                {[
+                  { label: 'Runtime', val: 'Browser / Vanilla JS', color: '#818cf8' },
+                  { label: 'Document Engine', val: 'docx.js (OpenXML)', color: '#a78bfa' },
+                  { label: 'Storage', val: 'localStorage only', color: '#60a5fa' },
+                  { label: 'Backend', val: 'None — zero servers', color: '#34d399' },
+                  { label: 'Auth', val: 'None — no sign-up', color: '#f472b6' },
+                  { label: 'Data sent', val: 'Nothing leaves browser', color: '#fbbf24' },
+                ].map(({ label, val, color }) => (
+                  <div key={label} style={{ padding: '14px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 5, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }} className="mono">{label}</div>
+                    <div style={{ fontSize: 13, color, fontWeight: 600 }} className="mono">{val}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-          <Link to="/how-it-works" className="inline-flex items-center gap-2 group px-6 py-3 rounded-full border border-white/10 hover:border-white/20 bg-white/[0.04] text-white font-semibold transition-all">
-            See the full breakdown <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+      {/* ── CTA ── */}
+      <section style={{ position: 'relative', zIndex: 10, padding: '64px 24px 96px', textAlign: 'center' }}>
+        <div style={{ maxWidth: 580, margin: '0 auto' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 14px', borderRadius: 999, border: '1px solid rgba(99,102,241,0.3)', background: 'rgba(99,102,241,0.1)', marginBottom: 24 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', display: 'inline-block', animation: 'pulse 2s ease infinite' }} />
+            <span className="mono" style={{ fontSize: 9, color: 'rgba(129,140,248,0.8)', letterSpacing: '0.09em', textTransform: 'uppercase' }}>Live · No Sign-up Needed</span>
+          </div>
+          <h2 className="syne" style={{ fontSize: 'clamp(24px,5vw,52px)', fontWeight: 800, letterSpacing: '-0.03em', color: 'white', marginBottom: 14, lineHeight: 1.1 }}>
+            Build your first document<br />
+            <span style={{ background: 'linear-gradient(135deg,#818cf8,#c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>right now.</span>
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 15, marginBottom: 32, fontWeight: 300 }}>
+            Free forever. Zero setup. Your browser is the server.
+          </p>
+          <Link to="/app" className="btn-primary" style={{ fontSize: 15, padding: '14px 36px' }}>
+            Launch Now
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </Link>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="relative z-10 py-20 md:py-28 px-6 lg:px-8">
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="relative rounded-[28px] p-8 md:p-12 overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1))', border: '1px solid rgba(99,102,241,0.2)' }}>
-            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.2), transparent 70%)' }} />
-            <div className="relative">
-              <h2 className="serif text-[32px] md:text-[52px] text-white leading-tight mb-4">Start generating free<br /><span className="italic text-white/60">AI Word documents today</span></h2>
-              <p className="text-white/50 text-lg mb-8 font-medium">Free forever. No account needed. Just open DocReplacer and go.</p>
-              <Link to="/app" className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full font-bold text-[16px] text-white glow-btn" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-                Open DocReplacer <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
+      {/* Footer */}
+      <footer style={{ position: 'relative', zIndex: 10, padding: '20px 24px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 1100, margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <svg width="18" height="18" viewBox="0 0 26 26" fill="none">
+            <rect width="26" height="26" rx="7" fill="rgba(99,102,241,0.15)" stroke="rgba(99,102,241,0.3)" strokeWidth="1" />
+            <rect x="6" y="7" width="14" height="2" rx="1" fill="#818cf8" />
+            <rect x="6" y="12" width="10" height="2" rx="1" fill="#818cf8" opacity=".6" />
+            <rect x="6" y="17" width="12" height="2" rx="1" fill="#818cf8" opacity=".35" />
+          </svg>
+          <span className="syne" style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.4)' }}>DocReplacer</span>
         </div>
-      </section>
-
-
+        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', fontWeight: 300 }}>100% client-side · No server · Free forever</span>
+      </footer>
     </div>
   );
 }

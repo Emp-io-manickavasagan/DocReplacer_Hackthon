@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { DOC_TYPES } from '../../utils/constants.js';
 import { streamOpenAI } from '../../utils/groq.js';
 import { sanitiseJsonStr, repairTruncated } from '../../utils/jsonParser.js';
-import { trackPromptSubmitted } from '../../tracking.js';
 
 
 function Step1Prompt({ onDone, setLoadingPhase }) {

@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { trackDownloadWithFeedback } from '../../tracking.js';
+import React, { useState } from 'react';
 import DocPreviewModal from './DocPreviewModal.jsx';
-import DownloadFeedbackModal from './DownloadFeedbackModal.jsx';
+
 function Step3Result({ result, onStartOver, onBack }) {
   const { filled, uint8, title } = result;
   const [showPreview, setShowPreview] = useState(false);
-  const [downloadModalOpen, setDownloadModalOpen] = useState(false);
 
   const runFileDownload = () => {
     try {
@@ -22,25 +20,14 @@ function Step3Result({ result, onStartOver, onBack }) {
     }
   };
 
-  const confirmDownloadWithFeedback = async ({ rating, comment }) => {
-    try { await trackDownloadWithFeedback({ rating, comment }); } catch (_) { /* never block download on tracking errors */ }
-    runFileDownload();
-    // Close AFTER onConfirm returns so modal's setLoading(false) runs before unmount
-    setTimeout(() => setDownloadModalOpen(false), 50);
-  };
+
 
   const totalParas = filled.filter(e => e.type === "paragraph" || e.type === "body").reduce((s, e) => s + (e.texts?.length || 1), 0)
     + filled.filter(e => e.type === "bullets").reduce((s, e) => s + (e.items?.length || 1), 0);
 
   return (
     <div className="w-full max-w-3xl mx-auto flex flex-col items-center py-10 text-center">
-      {downloadModalOpen && (
-        <DownloadFeedbackModal
-          docTitle={title}
-          onClose={() => setDownloadModalOpen(false)}
-          onConfirm={confirmDownloadWithFeedback}
-        />
-      )}
+
       {showPreview && <DocPreviewModal uint8={uint8} title={title} onClose={() => setShowPreview(false)} />}
 
       <div className="w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl font-black mb-8 shadow-[0_10px_32px_rgba(99,102,241,0.4)]" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>✓</div>
@@ -70,7 +57,7 @@ function Step3Result({ result, onStartOver, onBack }) {
         <button onClick={onBack} className="px-6 py-3.5 bg-white/[0.04] text-white/60 border border-white/[0.08] hover:border-white/[0.15] shadow-sm hover:bg-white/[0.08] hover:text-white rounded-2xl text-[14px] font-bold transition-all">← Back to Review</button>
         <button onClick={() => setShowPreview(true)} className="px-6 py-3.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:border-indigo-500/50 hover:bg-indigo-500/30 rounded-2xl text-[14px] font-bold transition-all">◈ Preview</button>
         <button onClick={onStartOver} className="px-6 py-3.5 bg-white/[0.04] text-white/60 border border-white/[0.08] hover:border-white/[0.15] shadow-sm hover:bg-white/[0.08] hover:text-white rounded-2xl text-[14px] font-bold transition-all">↺ Start Over</button>
-        <button type="button" onClick={() => setDownloadModalOpen(true)} className="px-8 py-3.5 text-white rounded-2xl text-[15px] font-bold shadow-[0_8px_20px_rgba(99,102,241,0.3)] hover:shadow-[0_8px_28px_rgba(99,102,241,0.45)] hover:scale-[1.02] transition-all" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>⬇ Download .docx</button>
+        <button type="button" onClick={runFileDownload} className="px-8 py-3.5 text-white rounded-2xl text-[15px] font-bold shadow-[0_8px_20px_rgba(99,102,241,0.3)] hover:shadow-[0_8px_28px_rgba(99,102,241,0.45)] hover:scale-[1.02] transition-all" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>⬇ Download .docx</button>
       </div>
     </div>
   );
