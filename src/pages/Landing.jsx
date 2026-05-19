@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { recordSessionVisit } from '../tracking.js';
 
 export default function HackathonLanding() {
   const [typed, setTyped] = useState('');
@@ -7,6 +8,7 @@ export default function HackathonLanding() {
   const prompt = 'Write a project proposal for a mobile app startup...';
 
   useEffect(() => {
+    recordSessionVisit();
     let i = 0;
     const iv = setInterval(() => {
       i++;
@@ -199,6 +201,8 @@ export default function HackathonLanding() {
             <a key={l} href={h} style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)', textDecoration: 'none', transition: 'color 0.2s' }}
               onMouseEnter={e => e.target.style.color = 'white'} onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.38)'}>{l}</a>
           ))}
+          <Link to="/blog" style={{ fontSize: 13, color: 'rgba(255,255,255,0.38)', textDecoration: 'none', transition: 'color 0.2s' }}
+            onMouseEnter={e => e.target.style.color = 'white'} onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.38)'}>Blog</Link>
         </div>
 
         <Link to="/app" className="btn-primary" style={{ padding: '9px 20px', fontSize: 13, animation: 'none', boxShadow: '0 0 18px rgba(99,102,241,0.3)' }}>

@@ -5,6 +5,7 @@ import Step2Editor from '../components/CoreAppFlow/Step2Editor.jsx';
 import Step3Result from '../components/CoreAppFlow/Step3Result.jsx';
 import Stepper from '../components/CoreAppFlow/Stepper.jsx';
 import LoadingOverlay from '../components/CoreAppFlow/LoadingOverlay.jsx';
+import { recordSessionVisit, trackPromptSubmitted, trackBuildDocx } from '../tracking.js';
 
 export default function CoreAppFlow() {
   const [step, setStep] = useState(0);
@@ -23,6 +24,10 @@ export default function CoreAppFlow() {
   const [loadingPhase, setLoadingPhase] = useState(null);
 
 
+
+  useEffect(() => {
+    recordSessionVisit();
+  }, []);
 
   useEffect(() => {
     if (!window.JSZip) {
@@ -106,9 +111,10 @@ export default function CoreAppFlow() {
             {step === 0 && (
               <Step1Prompt
                 setLoadingPhase={setLoadingPhase}
-                onDone={({ elements: els, docTitle, pages }) => {
+                onDone={({ elements: els, docTitle, pages, prompt }) => {
                   setElements(els);
                   setTargetPages(pages);
+                  trackPromptSubmitted();
                   setStep(1);
                 }} />
             )}
@@ -122,7 +128,7 @@ export default function CoreAppFlow() {
                 targetPages={targetPages}
                 setLoadingPhase={setLoadingPhase}
                 onBack={() => setStep(0)}
-                onDone={r => { setResult(r); setStep(2); }} />
+                onDone={r => { trackBuildDocx(); setResult(r); setStep(2); }} />
             )}
 
             {step === 2 && result && (

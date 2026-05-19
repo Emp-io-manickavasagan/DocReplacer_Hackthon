@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import DocPreviewModal from './DocPreviewModal.jsx';
+import { trackDownloadWithFeedback } from '../../tracking.js';
 
 function Step3Result({ result, onStartOver, onBack }) {
   const { filled, uint8, title } = result;
@@ -14,6 +15,7 @@ function Step3Result({ result, onStartOver, onBack }) {
       const a = document.createElement("a"); a.href = url; a.download = name;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 2000);
+      trackDownloadWithFeedback();
     } catch (err) {
       console.error("Download failed:", err);
       alert("Download failed: " + (err?.message || "unknown error"));
